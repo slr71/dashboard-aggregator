@@ -1,0 +1,8 @@
+listen_port: 3000
+
+db:
+  uri: insert-db-uri-here
+
+logging:
+  level: info
+  label: dashboard-aggregator

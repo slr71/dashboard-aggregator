@@ -102,3 +102,26 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Idea config
+*.iml
+.idea
+
+# VSCode config
+.vscode/
+
+# IntelliJ config
+.idea/
+
+#JSDoc output
+out/
+generated-docs/
+
+#.DS_Store
+.DS_Store
+
+# Configuration files
+config/production*
+config/*-production*
+config/local*
+config/*-local*

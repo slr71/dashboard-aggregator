@@ -18,9 +18,12 @@ const getQuery = (appIDs) => `
         a.integration_date,
         a.edited_date
    FROM apps a
-  WHERE a.id in ( ${appIDs.map((_, index) => `$${index + 1}`).join(",")} )
+  WHERE a.id in ( ${appIDs.map((_, index) => `$${index + 2}`).join(",")} )
     AND a.deleted = false
     AND a.disabled = false
+    AND a.integration_date IS NOT NULL
+ORDER BY a.integration_date DESC
+ LIMIT $1
 `;
 
 const getPublicAppIDs = () => {
@@ -40,13 +43,17 @@ const getPublicAppIDs = () => {
 
 const getHandler = (db) => async (req, res) => {
     try {
+        // the parseInt isn't necessary, but it'll throw an error if the value
+        // isn't a number.
+        const limit = parseInt(req?.query?.limit ?? "10", 10);
+
         const appIDs = await getPublicAppIDs().catch((e) => {
             throw e;
         });
 
         const q = getQuery(appIDs);
 
-        const { rows } = await db.query(q, appIDs).catch((e) => {
+        const { rows } = await db.query(q, [limit, ...appIDs]).catch((e) => {
             throw e;
         });
 

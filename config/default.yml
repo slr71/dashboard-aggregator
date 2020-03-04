@@ -6,3 +6,8 @@ db:
 logging:
   level: info
   label: dashboard-aggregator
+
+permissions:
+  uri: http://permissions
+  public_group: put-group-uuid-here
+  

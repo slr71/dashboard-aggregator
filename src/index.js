@@ -1,12 +1,13 @@
 import express from "express";
-import { Client } from "node-postgres";
+import { Client } from "pg";
 
 import * as config from "./configuration";
 import logger, { errorLogger, requestLogger } from "./logging";
+import recentlyAddedHandler from "./apps/recentlyAdded";
 
 logger.info("creating database client");
 
-logger.debug(config.dbURI);
+// Set up the database connection. May have to change to a Pool in the near future.
 const db = new Client({
     host: config.dbHost,
     user: config.dbUser,
@@ -19,9 +20,13 @@ db.connect();
 
 logger.info("setting up the express server");
 const app = express();
+
 app.use(errorLogger);
 app.use(requestLogger);
 
+/**
+ * Health check handler. Should be used by liveness and readiness checks.
+ */
 app.get("/healthz", async (req, res) => {
     const { rows } = await db
         .query("select version from version order by applied desc limit 1")
@@ -35,6 +40,11 @@ app.get("/healthz", async (req, res) => {
     res.status(200).send(`version ${rows[0].version}`);
 });
 
+app.get("/:username/apps/recently-added", recentlyAddedHandler(db));
+
+/**
+ * Start up the server on the configured port.
+ */
 app.listen(config.listenPort, (err) => {
     if (err) throw err;
     console.log(`> Ready on http://localhost:${config.listenPort}`);

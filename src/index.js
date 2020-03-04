@@ -4,6 +4,7 @@ import { Client } from "pg";
 import * as config from "./configuration";
 import logger, { errorLogger, requestLogger } from "./logging";
 import recentlyAddedHandler from "./apps/recentlyAdded";
+import publicAppsHandler from "./apps/public";
 
 logger.info("creating database client");
 
@@ -40,7 +41,9 @@ app.get("/healthz", async (req, res) => {
     res.status(200).send(`version ${rows[0].version}`);
 });
 
-app.get("/:username/apps/recently-added", recentlyAddedHandler(db));
+app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
+
+app.get("/apps/public", publicAppsHandler(db));
 
 /**
  * Start up the server on the configured port.

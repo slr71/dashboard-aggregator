@@ -26,6 +26,8 @@ const validate = () => {
     validateConfigSetting("db.port");
     validateConfigSetting("db.database");
     validateConfigSetting("listen_port");
+    validateConfigSetting("permissions.uri");
+    validateConfigSetting("permissions.public_group");
 };
 
 validate();
@@ -81,3 +83,13 @@ export const logLabel = config.get("logging.label") || "dashboard-aggregator";
  * The listen port for the app.
  */
 export const listenPort = parseInt(config.get("listen_port"), 10);
+
+/**
+ * The base URI for the permissions service.
+ */
+export const permissionsURL = config.get("permissions.uri");
+
+/**
+ * The public group in the permissions service.
+ */
+export const publicGroup = config.get("permissions.public_group");

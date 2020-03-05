@@ -3,7 +3,7 @@
  *
  * Returns a list of recently used apps.
  *
- * @module apps/recentlyUsed
+ * @module apps/recent
  */
 
 import logger from "../logging";
@@ -12,16 +12,16 @@ const recentAnalyses = `
   SELECT j.id,
          j.job_name as name,
          j.job_description as description,
-         j.app_id as appID,
-         j.app_name as appName,
-         j.app_description as appDescription,
-         j.result_folder_path as resultFolderPath,
-         j.start_date as startDate,
-         j.end_date as endDate,
-         j.planned_end_date as plannedEndDate,
+         j.app_id,
+         j.app_name,
+         j.app_description,
+         j.result_folder_path,
+         j.start_date,
+         j.end_date,
+         j.planned_end_date ,
          j.status,
          j.subdomain,
-         j.parent_id as parentID
+         j.parent_id
     FROM jobs j
     JOIN users ON j.user_id = users.id
    WHERE j.deleted = false

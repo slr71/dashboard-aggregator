@@ -52,7 +52,7 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
             - name: service-configs
-              mountPath: /etc/iplant/de
+              mountPath: /src/config/
               readOnly: true
           ports:
             - name: listen-port

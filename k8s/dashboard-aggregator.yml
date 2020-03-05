@@ -44,9 +44,6 @@ spec:
             limits:
               cpu: "3000m"
               memory: "3Gi"
-          env:
-            - name: NODE_CONFIG_DIR
-              value: "/src/config:/etc/iplant/de"
           volumeMounts:
             - name: localtime
               mountPath: /etc/localtime

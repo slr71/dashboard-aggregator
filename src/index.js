@@ -6,6 +6,7 @@ import logger, { errorLogger, requestLogger } from "./logging";
 import recentlyAddedHandler from "./apps/recentlyAdded";
 import publicAppsHandler from "./apps/public";
 import recentAnalysesHandler from "./analyses/recent";
+import runningAnalysesHandler from "./analyses/running";
 
 logger.info("creating database client");
 
@@ -44,6 +45,7 @@ app.get("/healthz", async (req, res) => {
 
 app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
 app.get("/users/:username/analyses/recent", recentAnalysesHandler(db));
+app.get("/users/:username/analyses/running", runningAnalysesHandler(db));
 
 app.get("/apps/public", publicAppsHandler(db));
 

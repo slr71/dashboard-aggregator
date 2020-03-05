@@ -25,22 +25,24 @@ ORDER BY a.integration_date DESC
    LIMIT $2
  `;
 
+export const getData = async (db, username, limit) => {
+    const { rows } = await db.query(appsQuery, [username, limit]).catch((e) => {
+        throw e;
+    });
+
+    if (!rows) {
+        throw new Error("no rows returned");
+    }
+
+    return rows;
+};
+
 const getHandler = (db) => {
     return async (req, res) => {
-        const username = req.params.username;
-        const limit = req?.query?.limit ?? "10";
-
         try {
-            const { rows } = await db
-                .query(appsQuery, [username, limit])
-                .catch((e) => {
-                    throw e;
-                });
-
-            if (!rows) {
-                throw new Error("no rows returned");
-            }
-
+            const username = req.params.username;
+            const limit = parseInt(req?.query?.limit ?? "10", 10);
+            const rows = await getData(db, username, limit);
             res.status(200).json({ apps: rows });
         } catch (e) {
             logger.error(e.message);

@@ -31,22 +31,26 @@ ORDER BY start_date DESC
    LIMIT $2
 `;
 
+export const getData = async (db, username, limit) => {
+    const { rows } = await db
+        .query(recentAnalyses, [username, limit])
+        .catch((e) => {
+            throw e;
+        });
+
+    if (!rows) {
+        throw new Error("no rows returned");
+    }
+
+    return rows;
+};
+
 const getHandler = (db) => async (req, res) => {
     try {
         // The parseInt should raise an error if it fails.
         const limit = parseInt(req?.query?.limit ?? "10", 10);
         const username = req?.params?.username;
-
-        const { rows } = await db
-            .query(recentAnalyses, [username, limit])
-            .catch((e) => {
-                throw e;
-            });
-
-        if (!rows) {
-            throw new Error("no rows returned");
-        }
-
+        const rows = await getData(db, username, limit);
         res.status(200).json({ analyses: rows });
     } catch (e) {
         logger.error(e);

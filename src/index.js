@@ -3,10 +3,16 @@ import { Client } from "pg";
 
 import * as config from "./configuration";
 import logger, { errorLogger, requestLogger } from "./logging";
-import recentlyAddedHandler from "./apps/recentlyAdded";
-import publicAppsHandler from "./apps/public";
-import recentAnalysesHandler from "./analyses/recent";
-import runningAnalysesHandler from "./analyses/running";
+import recentlyAddedHandler, {
+    getData as recentlyAddedData,
+} from "./apps/recentlyAdded";
+import publicAppsHandler, { getData as publicAppsData } from "./apps/public";
+import recentAnalysesHandler, {
+    getData as recentAnalysesData,
+} from "./analyses/recent";
+import runningAnalysesHandler, {
+    getData as runningAnalysesData,
+} from "./analyses/running";
 
 logger.info("creating database client");
 
@@ -46,6 +52,41 @@ app.get("/healthz", async (req, res) => {
 app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
 app.get("/users/:username/analyses/recent", recentAnalysesHandler(db));
 app.get("/users/:username/analyses/running", runningAnalysesHandler(db));
+app.get("/users/:username", async (req, res) => {
+    try {
+        const username = req.params.username;
+        const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const retval = {
+            apps: {
+                recentlyAdded: await recentlyAddedData(db, username, limit),
+                public: await publicAppsData(db, limit),
+            },
+            analyses: {
+                recent: await recentAnalysesData(db, username, limit),
+                running: await runningAnalysesData(db, username, limit),
+            },
+        };
+        res.status(200).json(retval);
+    } catch (e) {
+        logger.error(e.message);
+        res.status(500).send(`error running query: ${e.message}`);
+    }
+});
+
+app.get("/", async (req, res) => {
+    try {
+        const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const retval = {
+            apps: {
+                public: publicAppsData(db, limit),
+            },
+        };
+        res.status(200).json(retval);
+    } catch (e) {
+        logger.error(e.message);
+        res.status(500).send(`error running query: ${e.message}`);
+    }
+});
 
 app.get("/apps/public", publicAppsHandler(db));
 

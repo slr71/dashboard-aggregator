@@ -41,26 +41,30 @@ const getPublicAppIDs = () => {
         .then((data) => data.permissions.map((p) => p.resource.name));
 };
 
+export const getData = async (db, limit) => {
+    const appIDs = await getPublicAppIDs().catch((e) => {
+        throw e;
+    });
+
+    const q = getQuery(appIDs);
+
+    const { rows } = await db.query(q, [limit, ...appIDs]).catch((e) => {
+        throw e;
+    });
+
+    if (!rows) {
+        throw new Error("no rows returned");
+    }
+
+    return rows;
+};
+
 const getHandler = (db) => async (req, res) => {
     try {
         // the parseInt isn't necessary, but it'll throw an error if the value
         // isn't a number.
         const limit = parseInt(req?.query?.limit ?? "10", 10);
-
-        const appIDs = await getPublicAppIDs().catch((e) => {
-            throw e;
-        });
-
-        const q = getQuery(appIDs);
-
-        const { rows } = await db.query(q, [limit, ...appIDs]).catch((e) => {
-            throw e;
-        });
-
-        if (!rows) {
-            throw new Error("no rows returned");
-        }
-
+        const rows = await getData(db, limit);
         res.status(200).json({ apps: rows });
     } catch (e) {
         logger.error(e.message);

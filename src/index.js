@@ -14,6 +14,8 @@ import runningAnalysesHandler, {
     getData as runningAnalysesData,
 } from "./analyses/running";
 
+import WebsiteFeed, { feedURL } from "./feed";
+
 logger.info("creating database client");
 
 // Set up the database connection. May have to change to a Pool in the near future.
@@ -56,6 +58,9 @@ app.get("/users/:username", async (req, res) => {
     try {
         const username = req.params.username;
         const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const newsFeed = new WebsiteFeed(
+            feedURL(config.websiteURL, config.newsFeedPath)
+        );
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAddedData(db, username, limit),
@@ -65,11 +70,14 @@ app.get("/users/:username", async (req, res) => {
                 recent: await recentAnalysesData(db, username, limit),
                 running: await runningAnalysesData(db, username, limit),
             },
+            feeds: {
+                news: await newsFeed.getItems(),
+            },
         };
         res.status(200).json(retval);
     } catch (e) {
-        logger.error(e.message);
-        res.status(500).send(`error running query: ${e.message}`);
+        logger.error(e);
+        res.status(500).send(`error running query: ${e}`);
     }
 });
 

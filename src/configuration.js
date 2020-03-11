@@ -93,3 +93,13 @@ export const permissionsURL = config.get("permissions.uri");
  * The public group in the permissions service.
  */
 export const publicGroup = config.get("permissions.public_group");
+
+/**
+ * The base URL for the website.
+ */
+export const websiteURL = config.get("website.url");
+
+/**
+ * The path to the news RSS feed file on the website.
+ */
+export const newsFeedPath = config.get("website.feeds.news");

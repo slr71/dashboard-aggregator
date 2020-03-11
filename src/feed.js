@@ -7,6 +7,8 @@
  */
 import path from "path";
 import Parser from "rss-parser";
+import { CronJob } from "cron";
+import logger from "./logging";
 
 const transformFeedItem = (item) => {
     return {
@@ -29,10 +31,19 @@ export default class WebsiteFeed {
         this.feedURL = feedURL;
         this.limit = limit;
         this.items = [];
-        this.pullItems();
+    }
+
+    scheduleRefresh() {
+        const job = new CronJob("0 * * * *", () => {
+            logger.info(`starting refresh of ${this.feedURL}`);
+            this.pullItems();
+        });
+        return job;
     }
 
     async pullItems() {
+        logger.info(`pulling items from ${this.feedURL}`);
+
         const parser = new Parser();
         const feed = await parser.parseURL(this.feedURL);
 
@@ -40,12 +51,19 @@ export default class WebsiteFeed {
         feed.items.reverse();
 
         if (feed.items.length > this.limit) {
+            logger.debug(`using for-loop population for ${this.feedURL}`);
+
+            let newList = [];
             for (let i = 0; i < this.limit; i++) {
-                this.items.push(transformFeedItem(feed.items[i]));
+                newList.push(transformFeedItem(feed.items[i]));
             }
+            this.items = [...newList]; // spread isn't technically necessary, but I prefer it to reference copying.
         } else {
+            logger.debug(`using map-spread population for ${this.feedURL}`);
             this.items = [...feed.items.map((item) => transformFeedItem(item))];
         }
+
+        logger.info(`done pulling items from ${this.feedURL}`);
     }
 
     async getItems() {

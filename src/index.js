@@ -29,6 +29,19 @@ const db = new Client({
 
 db.connect();
 
+// Populate feeds from the website.
+const newsFeed = new WebsiteFeed(
+    feedURL(config.websiteURL, config.newsFeedPath)
+);
+newsFeed.pullItems(); // populate the local copy.
+newsFeed.scheduleRefresh().start(); // schedule the refresh of the local copy.
+
+const eventsFeed = new WebsiteFeed(
+    feedURL(config.websiteURL, config.eventsFeedPath)
+);
+eventsFeed.pullItems();
+eventsFeed.scheduleRefresh().start();
+
 logger.info("setting up the express server");
 const app = express();
 
@@ -58,12 +71,6 @@ app.get("/users/:username", async (req, res) => {
     try {
         const username = req.params.username;
         const limit = parseInt(req?.query?.limit ?? "10", 10);
-        const newsFeed = new WebsiteFeed(
-            feedURL(config.websiteURL, config.newsFeedPath)
-        );
-        const eventsFeed = new WebsiteFeed(
-            feedURL(config.websiteURL, config.eventsFeedPath)
-        );
 
         const retval = {
             apps: {

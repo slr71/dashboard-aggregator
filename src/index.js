@@ -61,6 +61,10 @@ app.get("/users/:username", async (req, res) => {
         const newsFeed = new WebsiteFeed(
             feedURL(config.websiteURL, config.newsFeedPath)
         );
+        const eventsFeed = new WebsiteFeed(
+            feedURL(config.websiteURL, config.eventsFeedPath)
+        );
+
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAddedData(db, username, limit),
@@ -72,8 +76,10 @@ app.get("/users/:username", async (req, res) => {
             },
             feeds: {
                 news: await newsFeed.getItems(),
+                events: await eventsFeed.getItems(),
             },
         };
+
         res.status(200).json(retval);
     } catch (e) {
         logger.error(e);

@@ -15,4 +15,5 @@ website:
   url: https://cyverse.org
   feeds:
     news: "/news/rss.xml"
+    events: "/events/rss.xml"
   

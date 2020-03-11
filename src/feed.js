@@ -29,27 +29,27 @@ export default class WebsiteFeed {
         this.feedURL = feedURL;
         this.limit = limit;
         this.items = [];
+        this.pullItems();
     }
 
     async pullItems() {
-        console.log(this.feedURL);
         const parser = new Parser();
         const feed = await parser.parseURL(this.feedURL);
 
+        // Make sure the latest post is first.
+        feed.items.reverse();
+
         if (feed.items.length > this.limit) {
-            console.log("using for loop");
             for (let i = 0; i < this.limit; i++) {
                 this.items.push(transformFeedItem(feed.items[i]));
             }
         } else {
-            console.log("using spread");
             this.items = [...feed.items.map((item) => transformFeedItem(item))];
         }
     }
 
     async getItems() {
         if (this.items.length === 0) {
-            console.log("calling pullItems");
             await this.pullItems();
         }
         return this.items;

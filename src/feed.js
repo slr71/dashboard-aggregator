@@ -16,7 +16,7 @@ const transformFeedItem = (item) => {
         name: item.title,
         description: item.contentSnippet,
         link: item.link,
-        dateAdded: item.isoDate,
+        date_added: item.isoDate,
     };
 };
 

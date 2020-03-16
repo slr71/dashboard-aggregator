@@ -38,13 +38,14 @@ const getPublicAppIDs = () => {
             return resp;
         })
         .then((resp) => resp.json())
-        .then((data) => data.permissions.map((p) => p.resource.name));
+        .then((data) => data.permissions.map((p) => p.resource.name))
+        .catch((e) => {
+            throw e;
+        });
 };
 
 export const getData = async (db, limit) => {
-    const appIDs = await getPublicAppIDs().catch((e) => {
-        throw e;
-    });
+    const appIDs = await getPublicAppIDs();
 
     const q = getQuery(appIDs);
 
@@ -55,6 +56,8 @@ export const getData = async (db, limit) => {
     if (!rows) {
         throw new Error("no rows returned");
     }
+
+    console.log(rows);
 
     return rows;
 };

@@ -101,6 +101,10 @@ app.get("/", async (req, res) => {
             apps: {
                 public: await publicAppsData(db, limit),
             },
+            feeds: {
+                news: await newsFeed.getItems(),
+                events: await eventsFeed.getItems(),
+            },
         };
         res.status(200).json(retval);
     } catch (e) {

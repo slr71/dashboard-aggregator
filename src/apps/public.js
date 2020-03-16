@@ -57,8 +57,6 @@ export const getData = async (db, limit) => {
         throw new Error("no rows returned");
     }
 
-    console.log(rows);
-
     return rows;
 };
 

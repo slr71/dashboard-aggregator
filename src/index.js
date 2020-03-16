@@ -99,7 +99,7 @@ app.get("/", async (req, res) => {
         const limit = parseInt(req?.query?.limit ?? "10", 10);
         const retval = {
             apps: {
-                public: publicAppsData(db, limit),
+                public: await publicAppsData(db, limit),
             },
         };
         res.status(200).json(retval);

@@ -21,12 +21,13 @@ const recentAnalyses = `
          j.planned_end_date,
          j.status,
          j.subdomain,
-         j.parent_id
+         j.parent_id,
+         u.username
     FROM jobs j
-    JOIN users ON j.user_id = users.id
+    JOIN users u ON j.user_id = u.id
    WHERE j.deleted = false
      AND j.status = 'Running'
-     AND users.username = $1
+     AND u.username = $1
 ORDER BY start_date DESC
    LIMIT $2
 `;

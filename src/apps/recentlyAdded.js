@@ -14,7 +14,8 @@ const appsQuery = `
          a.description,
          a.wiki_url,
          a.integration_date,
-         a.edited_date
+         a.edited_date,
+         u.username
     FROM apps a
     JOIN integration_data i ON a.integration_data_id = i.id
     JOIN users u ON i.user_id = u.id

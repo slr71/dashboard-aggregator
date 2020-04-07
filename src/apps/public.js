@@ -16,8 +16,11 @@ const getQuery = (appIDs) => `
         a.description,
         a.wiki_url,
         a.integration_date,
-        a.edited_date
+        a.edited_date,
+        u.username
    FROM apps a
+   JOIN integration_data d on a.integration_data_id = d.id
+   JOIN users u on d.user_id = u.id
   WHERE a.id in ( ${appIDs.map((_, index) => `$${index + 2}`).join(",")} )
     AND a.deleted = false
     AND a.disabled = false

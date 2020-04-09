@@ -72,6 +72,9 @@ app.get("/users/:username", async (req, res) => {
         const username = req.params.username;
         const limit = parseInt(req?.query?.limit ?? "10", 10);
 
+        const newsItems = await newsFeed.getItems();
+        const eventsItems = await eventsFeed.getItems();
+
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAddedData(db, username, limit),
@@ -82,8 +85,8 @@ app.get("/users/:username", async (req, res) => {
                 running: await runningAnalysesData(db, username, limit),
             },
             feeds: {
-                news: await newsFeed.getItems(),
-                events: await eventsFeed.getItems(),
+                news: newsItems.slice(0, limit),
+                events: eventsItems.slice(0, limit),
             },
         };
 
@@ -97,13 +100,17 @@ app.get("/users/:username", async (req, res) => {
 app.get("/", async (req, res) => {
     try {
         const limit = parseInt(req?.query?.limit ?? "10", 10);
+
+        const newsItems = await newsFeed.getItems();
+        const eventsItems = await eventsFeed.getItems();
+
         const retval = {
             apps: {
                 public: await publicAppsData(db, limit),
             },
             feeds: {
-                news: await newsFeed.getItems(),
-                events: await eventsFeed.getItems(),
+                news: newsItems.slice(0, limit),
+                events: eventsItems.slice(0, limit),
             },
         };
         res.status(200).json(retval);

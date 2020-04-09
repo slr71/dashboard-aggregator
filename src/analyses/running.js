@@ -1,9 +1,9 @@
 /**
  * @author johnworth
  *
- * Returns a list of recently used apps.
+ * Returns a list of running analyses.
  *
- * @module apps/running
+ * @module analyses/running
  */
 
 import logger from "../logging";

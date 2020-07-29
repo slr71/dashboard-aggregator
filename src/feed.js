@@ -10,15 +10,23 @@ import Parser from "rss-parser";
 import { CronJob } from "cron";
 import logger from "./logging";
 
-const transformFeedItem = (item) => {
-    return {
-        id: item.guid,
-        name: item.title,
-        description: item.contentSnippet,
-        link: item.link,
-        date_added: item.isoDate,
-    };
-};
+const transformFeedItem = ({
+    guid: id,
+    title: name,
+    contentSnippet: description,
+    isoDate: date_added,
+    creator,
+    pubDate: publication_date,
+    content,
+}) => ({
+    id,
+    name,
+    description,
+    date_added,
+    creator,
+    publication_date,
+    content,
+});
 
 export const feedURL = (baseURL, feedPath) => {
     const u = new URL(baseURL);

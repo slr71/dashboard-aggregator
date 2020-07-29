@@ -16,4 +16,6 @@ website:
   feeds:
     news: "/news/rss.xml"
     events: "/events/rss.xml"
-  
+
+videos:
+  url: https://www.youtube.com/feeds/videos.xml?channel_id=UC-gvdjTz9rq6RovZ57LoDDA

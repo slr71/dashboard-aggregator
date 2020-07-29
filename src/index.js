@@ -14,7 +14,7 @@ import runningAnalysesHandler, {
     getData as runningAnalysesData,
 } from "./analyses/running";
 
-import WebsiteFeed, { feedURL } from "./feed";
+import WebsiteFeed, { feedURL, VideoFeed } from "./feed";
 
 logger.info("creating database client");
 
@@ -41,6 +41,10 @@ const eventsFeed = new WebsiteFeed(
 );
 eventsFeed.pullItems();
 eventsFeed.scheduleRefresh().start();
+
+const videosFeed = new VideoFeed(config.videosURL);
+videosFeed.pullItems();
+videosFeed.scheduleRefresh().start();
 
 logger.info("setting up the express server");
 const app = express();
@@ -126,11 +130,13 @@ app.get("/feeds", async (req, res) => {
 
         const newsItems = await newsFeed.getItems();
         const eventsItems = await eventsFeed.getItems();
+        const videosItems = await videosFeed.getItems();
 
         const retval = {
             feeds: {
                 news: newsItems.slice(0, limit),
                 events: eventsItems.slice(0, limit),
+                videos: videosItems.slice(0, limit),
             },
         };
         res.status(200).json(retval);

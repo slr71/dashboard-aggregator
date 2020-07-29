@@ -10,23 +10,51 @@ import Parser from "rss-parser";
 import { CronJob } from "cron";
 import logger from "./logging";
 
-const transformFeedItem = ({
-    guid: id,
-    title: name,
-    fullDescription: description,
-    isoDate: date_added,
-    creator,
-    pubDate: publication_date,
-    content,
-}) => ({
-    id,
-    name,
-    description,
-    date_added,
-    creator,
-    publication_date,
-    content,
-});
+const transformFeedItem = (item) => {
+    const {
+        guid: id,
+        title: name,
+        contentSnippet: description,
+        isoDate: date_added,
+        author,
+        pubDate: publication_date,
+        content,
+        link,
+    } = item;
+
+    return {
+        id,
+        name,
+        description,
+        date_added,
+        author,
+        publication_date,
+        content,
+        link,
+    };
+};
+
+const transformVideoItem = (item) => {
+    const {
+        id,
+        title: name,
+        isoDate: date_added,
+        author,
+        pubDate: publication_date,
+        link,
+    } = item;
+    const description = item["media:group"]["media:description"][0];
+
+    return {
+        id,
+        name,
+        description,
+        date_added,
+        author,
+        publication_date,
+        link,
+    };
+};
 
 export const feedURL = (baseURL, feedPath) => {
     const u = new URL(baseURL);
@@ -55,7 +83,7 @@ export default class WebsiteFeed {
         const parser = new Parser({
             customFields: {
                 item: [
-                    ["dc:creator", "creator"],
+                    ["dc:creator", "author"],
                     ["description", "content", { includeSnippet: true }],
                 ],
             },
@@ -81,10 +109,85 @@ export default class WebsiteFeed {
         logger.info(`done pulling items from ${this.feedURL}`);
     }
 
+    // Useful for debugging.
+    async printItems() {
+        logger.info(`printing items from ${this.feedURL}`);
+
+        const parser = new Parser();
+        const feed = await parser.parseURL(this.feedURL);
+
+        feed.items.reverse();
+
+        feed.items.forEach((item) => {
+            console.log("\n");
+            console.log(JSON.stringify(item, null, 2));
+        });
+
+        logger.info(`done printing items from ${this.feedURL}`);
+    }
+
     async getItems() {
         if (this.items.length === 0) {
             await this.pullItems();
         }
         return this.items;
+    }
+}
+
+export class VideoFeed extends WebsiteFeed {
+    constructor(feedURL, limit = 20) {
+        super(feedURL, limit);
+    }
+
+    async pullItems() {
+        logger.info(`pulling items from ${this.feedURL}`);
+
+        const parser = new Parser({
+            customFields: {
+                item: [["media:group", "media:group"]],
+            },
+        });
+        const feed = await parser.parseURL(this.feedURL);
+
+        // Make sure the latest post is first.
+        feed.items.reverse();
+
+        if (feed.items.length > this.limit) {
+            logger.debug(`using for-loop population for ${this.feedURL}`);
+
+            let newList = [];
+            for (let i = 0; i < this.limit; i++) {
+                newList.push(transformVideoItem(feed.items[i]));
+            }
+            this.items = [...newList];
+        } else {
+            logger.debug(`using map-spread population for ${this.feedURL}`);
+            this.items = [
+                ...feed.items.map((item) => transformVideoItem(item)),
+            ];
+        }
+
+        logger.info(`done pulling items from ${this.feedURL}`);
+    }
+
+    // Useful for debugging.
+    async printItems() {
+        logger.info(`printing items from ${this.feedURL}`);
+
+        const parser = new Parser({
+            customFields: {
+                item: [["media:group", "media:group"]],
+            },
+        });
+        const feed = await parser.parseURL(this.feedURL);
+
+        feed.items.reverse();
+
+        feed.items.forEach((item) => {
+            console.log("\n");
+            console.log(JSON.stringify(transformVideoItem(item), null, 2));
+        });
+
+        logger.info(`done printing items from ${this.feedURL}`);
     }
 }

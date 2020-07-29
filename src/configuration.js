@@ -108,3 +108,8 @@ export const newsFeedPath = config.get("website.feeds.news");
  * The path to the events RSS feed file on the website.
  */
 export const eventsFeedPath = config.get("website.feeds.events");
+
+/**
+ * The URL to the RSS feed for the videos.
+ */
+export const videosURL = config.get("videos.url");

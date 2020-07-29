@@ -65,7 +65,7 @@ export default class WebsiteFeed {
             for (let i = 0; i < this.limit; i++) {
                 newList.push(transformFeedItem(feed.items[i]));
             }
-            this.items = [...newList]; // spread isn't technically necessary, but I prefer it to reference copying.
+            this.items = [...newList];
         } else {
             logger.debug(`using map-spread population for ${this.feedURL}`);
             this.items = [...feed.items.map((item) => transformFeedItem(item))];

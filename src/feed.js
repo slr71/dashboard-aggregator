@@ -13,7 +13,7 @@ import logger from "./logging";
 const transformFeedItem = ({
     guid: id,
     title: name,
-    contentSnippet: description,
+    fullDescription: description,
     isoDate: date_added,
     creator,
     pubDate: publication_date,
@@ -52,7 +52,14 @@ export default class WebsiteFeed {
     async pullItems() {
         logger.info(`pulling items from ${this.feedURL}`);
 
-        const parser = new Parser();
+        const parser = new Parser({
+            customFields: {
+                item: [
+                    ["dc:creator", "creator"],
+                    ["description", "content", { includeSnippet: true }],
+                ],
+            },
+        });
         const feed = await parser.parseURL(this.feedURL);
 
         // Make sure the latest post is first.

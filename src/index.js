@@ -120,6 +120,26 @@ app.get("/", async (req, res) => {
     }
 });
 
+app.get("/feeds", async (req, res) => {
+    try {
+        const limit = parseInt(req?.query?.limit ?? "10", 10);
+
+        const newsItems = await newsFeed.getItems();
+        const eventsItems = await eventsFeed.getItems();
+
+        const retval = {
+            feeds: {
+                news: newsItems.slice(0, limit),
+                events: eventsItems.slice(0, limit),
+            },
+        };
+        res.status(200).json(retval);
+    } catch (e) {
+        logger.error(e.message);
+        res.status(500).send(`error getting feeds: ${e.message}`);
+    }
+});
+
 app.get("/apps/public", publicAppsHandler(db));
 
 /**

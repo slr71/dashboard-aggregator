@@ -52,6 +52,18 @@ const app = express();
 app.use(errorLogger);
 app.use(requestLogger);
 
+const createFeeds = async (limit) => {
+    const newsItems = await newsFeed.getItems();
+    const eventsItems = await eventsFeed.getItems();
+    const videosItems = await videosFeed.getItems();
+
+    return {
+        news: newsItems.slice(0, limit),
+        events: eventsItems.slice(0, limit),
+        videos: videosItems.slice(0, limit),
+    };
+};
+
 /**
  * Health check handler. Should be used by liveness and readiness checks.
  */
@@ -75,9 +87,7 @@ app.get("/users/:username", async (req, res) => {
     try {
         const username = req.params.username;
         const limit = parseInt(req?.query?.limit ?? "10", 10);
-
-        const newsItems = await newsFeed.getItems();
-        const eventsItems = await eventsFeed.getItems();
+        const feeds = await createFeeds(limit);
 
         const retval = {
             apps: {
@@ -88,10 +98,7 @@ app.get("/users/:username", async (req, res) => {
                 recent: await recentAnalysesData(db, username, limit),
                 running: await runningAnalysesData(db, username, limit),
             },
-            feeds: {
-                news: newsItems.slice(0, limit),
-                events: eventsItems.slice(0, limit),
-            },
+            feeds,
         };
 
         res.status(200).json(retval);
@@ -104,18 +111,13 @@ app.get("/users/:username", async (req, res) => {
 app.get("/", async (req, res) => {
     try {
         const limit = parseInt(req?.query?.limit ?? "10", 10);
-
-        const newsItems = await newsFeed.getItems();
-        const eventsItems = await eventsFeed.getItems();
+        const feeds = await createFeeds(limit);
 
         const retval = {
             apps: {
                 public: await publicAppsData(db, limit),
             },
-            feeds: {
-                news: newsItems.slice(0, limit),
-                events: eventsItems.slice(0, limit),
-            },
+            feeds,
         };
         res.status(200).json(retval);
     } catch (e) {
@@ -127,19 +129,11 @@ app.get("/", async (req, res) => {
 app.get("/feeds", async (req, res) => {
     try {
         const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const feeds = await createFeeds(limit);
 
-        const newsItems = await newsFeed.getItems();
-        const eventsItems = await eventsFeed.getItems();
-        const videosItems = await videosFeed.getItems();
-
-        const retval = {
-            feeds: {
-                news: newsItems.slice(0, limit),
-                events: eventsItems.slice(0, limit),
-                videos: videosItems.slice(0, limit),
-            },
-        };
-        res.status(200).json(retval);
+        res.status(200).json({
+            feeds,
+        });
     } catch (e) {
         logger.error(e.message);
         res.status(500).send(`error getting feeds: ${e.message}`);

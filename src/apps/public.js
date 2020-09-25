@@ -10,8 +10,10 @@ import * as config from "../configuration";
 import logger from "../logging";
 import fetch from "node-fetch";
 
+// All apps returned by this query are DE apps, so the system ID can be constant.
 const getQuery = (appIDs) => `
  SELECT a.id,
+        'de' AS system_id,
         a.name,
         a.description,
         a.wiki_url,

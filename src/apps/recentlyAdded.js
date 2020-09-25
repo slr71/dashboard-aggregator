@@ -8,8 +8,10 @@
 
 import logger from "../logging";
 
+// All apps returned by this query are DE apps, so the system ID can be constant.
 const appsQuery = `
   SELECT a.id,
+         'de' AS system_id,
          a.name,
          a.description,
          a.wiki_url,

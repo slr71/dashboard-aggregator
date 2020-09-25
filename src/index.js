@@ -147,5 +147,5 @@ app.get("/apps/public", publicAppsHandler(db));
  */
 app.listen(config.listenPort, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://localhost:${config.listenPort}`);
+    logger.info(`> Ready on http://localhost:${config.listenPort}`);
 });

@@ -93,7 +93,7 @@ app.get("/users/:username", async (req, res) => {
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAddedData(db, username, limit),
-                protected: await publicAppsData(db, username, limit),
+                public: await publicAppsData(db, username, limit),
             },
             analyses: {
                 recent: await recentAnalysesData(db, username, limit),

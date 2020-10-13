@@ -28,6 +28,7 @@ const validate = () => {
     validateConfigSetting("listen_port");
     validateConfigSetting("permissions.uri");
     validateConfigSetting("permissions.public_group");
+    validateConfigSetting("apps.favorites_group_index");
 };
 
 validate();
@@ -113,3 +114,11 @@ export const eventsFeedPath = config.get("website.feeds.events");
  * The URL to the RSS feed for the videos.
  */
 export const videosURL = config.get("videos.url");
+
+/**
+ * The index of the favorites group in the user's workspace.
+ */
+export const favoritesGroupIndex = parseInt(
+    config.get("apps.favorites_group_index"),
+    10
+);

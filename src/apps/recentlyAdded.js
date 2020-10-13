@@ -6,6 +6,7 @@
  * @module apps/recentlyAdded
  */
 
+import * as config from "../configuration";
 import logger from "../logging";
 
 // All apps returned by this query are DE apps, so the system ID can be constant.
@@ -17,7 +18,15 @@ const appsQuery = `
          a.wiki_url,
          a.integration_date,
          a.edited_date,
-         u.username
+         u.username,
+         EXISTS (
+            SELECT * FROM workspace w
+            JOIN app_category_group acg ON w.root_category_id = acg.parent_category_id
+            JOIN app_category_app aca ON acg.child_category_id = aca.app_category_id
+            WHERE aca.app_id = a.id
+            AND w.user_id = u.id
+            AND acg.child_index = $3
+         ) AS is_favorite
     FROM apps a
     JOIN integration_data i ON a.integration_data_id = i.id
     JOIN users u ON i.user_id = u.id
@@ -29,9 +38,11 @@ ORDER BY a.integration_date DESC
  `;
 
 export const getData = async (db, username, limit) => {
-    const { rows } = await db.query(appsQuery, [username, limit]).catch((e) => {
-        throw e;
-    });
+    const { rows } = await db
+        .query(appsQuery, [username, limit, config.favoritesGroupIndex])
+        .catch((e) => {
+            throw e;
+        });
 
     if (!rows) {
         throw new Error("no rows returned");

@@ -80,6 +80,7 @@ app.get("/healthz", async (req, res) => {
     res.status(200).send(`version ${rows[0].version}`);
 });
 
+app.get("/users/:username/apps/public", publicAppsHandler(db));
 app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
 app.get("/users/:username/analyses/recent", recentAnalysesHandler(db));
 app.get("/users/:username/analyses/running", runningAnalysesHandler(db));
@@ -92,7 +93,7 @@ app.get("/users/:username", async (req, res) => {
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAddedData(db, username, limit),
-                public: await publicAppsData(db, limit),
+                public: await publicAppsData(db, username, limit),
             },
             analyses: {
                 recent: await recentAnalysesData(db, username, limit),
@@ -115,7 +116,7 @@ app.get("/", async (req, res) => {
 
         const retval = {
             apps: {
-                public: await publicAppsData(db, limit),
+                public: await publicAppsData(db, null, limit),
             },
             feeds,
         };

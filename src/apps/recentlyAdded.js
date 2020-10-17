@@ -6,6 +6,7 @@
  * @module apps/recentlyAdded
  */
 
+import { getPublicAppIDs } from "../clients/permissions";
 import * as config from "../configuration";
 import logger from "../logging";
 
@@ -48,7 +49,9 @@ export const getData = async (db, username, limit) => {
         throw new Error("no rows returned");
     }
 
-    return rows;
+    // Add the is_public flag to each app before returning the listing.
+    const publicAppIds = new Set(await getPublicAppIDs());
+    return rows.map((app) => ({ ...app, is_public: publicAppIds.has(app.id) }));
 };
 
 const getHandler = (db) => {

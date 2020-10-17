@@ -6,9 +6,9 @@
  * @module apps/public
  */
 
+import { getPublicAppIDs } from "../clients/permissions";
 import * as config from "../configuration";
 import logger from "../logging";
-import fetch from "node-fetch";
 
 // All apps returned by this query are DE apps, so the system ID can be constant.
 const getQuery = (appIDs) => `
@@ -28,7 +28,8 @@ const getQuery = (appIDs) => `
             WHERE authenticated_user.username = $2
             AND acg.child_index = $3
             AND aca.app_id = a.id
-         ) AS is_favorite
+         ) AS is_favorite,
+         true AS is_public
    FROM apps a
    JOIN integration_data d on a.integration_data_id = d.id
    JOIN users u on d.user_id = u.id
@@ -39,24 +40,6 @@ const getQuery = (appIDs) => `
 ORDER BY a.integration_date DESC
  LIMIT $1
 `;
-
-const getPublicAppIDs = () => {
-    const reqURL = new URL(config.permissionsURL);
-    reqURL.pathname = `/permissions/subjects/group/${config.publicGroup}/app`;
-    return fetch(reqURL)
-        .then(async (resp) => {
-            if (!resp.ok) {
-                const msg = await resp.text();
-                throw new Error(msg);
-            }
-            return resp;
-        })
-        .then((resp) => resp.json())
-        .then((data) => data.permissions.map((p) => p.resource.name))
-        .catch((e) => {
-            throw e;
-        });
-};
 
 export const getData = async (db, username, limit) => {
     const appIDs = await getPublicAppIDs();

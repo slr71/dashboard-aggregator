@@ -9,6 +9,7 @@
 import { getPublicAppIDs } from "../clients/permissions";
 import * as config from "../configuration";
 import logger from "../logging";
+import { validateLimit } from "../util";
 
 // All apps returned by this query are DE apps, so the system ID can be constant.
 const appsQuery = `
@@ -58,7 +59,7 @@ const getHandler = (db) => {
     return async (req, res) => {
         try {
             const username = req.params.username;
-            const limit = parseInt(req?.query?.limit ?? "10", 10);
+            const limit = validateLimit(req?.query?.limit) ?? 10;
             const rows = await getData(db, username, limit);
             res.status(200).json({ apps: rows });
         } catch (e) {

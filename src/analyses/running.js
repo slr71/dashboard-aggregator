@@ -7,6 +7,7 @@
  */
 
 import logger from "../logging";
+import { validateLimit } from "../util";
 
 const recentAnalyses = `
   SELECT j.id,
@@ -48,8 +49,7 @@ export const getData = async (db, username, limit) => {
 
 const getHandler = (db) => async (req, res) => {
     try {
-        // The parseInt should raise an error if it fails.
-        const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const limit = validateLimit(req?.query?.limit) ?? 10;
         const username = req?.params?.username;
         const rows = await getData(db, username, limit);
         res.status(200).json({ analyses: rows });

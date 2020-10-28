@@ -7,7 +7,7 @@ import recentlyAddedHandler, {
     getData as recentlyAddedData,
 } from "./apps/recentlyAdded";
 import publicAppsHandler, { getData as publicAppsData } from "./apps/public";
-import recentlyRanHandler, { getRecentlyRanApps } from "./apps/recentlyRan";
+import recentlyUsedHandler, { getRecentlyUsedApps } from "./apps/recentlyUsed";
 import recentAnalysesHandler, {
     getData as recentAnalysesData,
 } from "./analyses/recent";
@@ -17,6 +17,7 @@ import runningAnalysesHandler, {
 import { validateInterval, validateLimit } from "./util";
 
 import WebsiteFeed, { feedURL, VideoFeed } from "./feed";
+import constants from "./constants";
 
 logger.info("creating database client");
 
@@ -84,7 +85,7 @@ app.get("/healthz", async (req, res) => {
 
 app.get("/users/:username/apps/public", publicAppsHandler(db));
 app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
-app.get("/users/:username/apps/recently-ran", recentlyRanHandler(db));
+app.get("/users/:username/apps/recently-used", recentlyUsedHandler(db));
 app.get("/users/:username/analyses/recent", recentAnalysesHandler(db));
 app.get("/users/:username/analyses/running", runningAnalysesHandler(db));
 app.get("/users/:username", async (req, res) => {
@@ -92,7 +93,7 @@ app.get("/users/:username", async (req, res) => {
         const username = req.params.username;
         const startDateInterval =
             (await validateInterval(req?.query["start-date-interval"])) ??
-            "1 week";
+            constants.DEFAULT_START_DATE_INTERVAL;
         const limit = validateLimit(req?.query?.limit) ?? 10;
         const feeds = await createFeeds(limit);
 
@@ -100,7 +101,7 @@ app.get("/users/:username", async (req, res) => {
             apps: {
                 recentlyAdded: await recentlyAddedData(db, username, limit),
                 public: await publicAppsData(db, username, limit),
-                recentlyRan: await getRecentlyRanApps(
+                recentlyUsed: await getRecentlyUsedApps(
                     db,
                     username,
                     limit,
@@ -124,20 +125,11 @@ app.get("/users/:username", async (req, res) => {
 app.get("/", async (req, res) => {
     try {
         const limit = validateLimit(req?.query?.limit) ?? 10;
-        const startDateInterval =
-            (await validateInterval(req?.query["start-date-interval"])) ??
-            "1 week";
         const feeds = await createFeeds(limit);
 
         const retval = {
             apps: {
                 public: await publicAppsData(db, null, limit),
-                recentlyRan: await getRecentlyRanApps(
-                    db,
-                    null,
-                    limit,
-                    startDateInterval
-                ),
             },
             feeds,
         };
@@ -163,7 +155,7 @@ app.get("/feeds", async (req, res) => {
 });
 
 app.get("/apps/public", publicAppsHandler(db));
-app.get("/apps/recently-ran", recentlyRanHandler(db));
+app.get("/apps/recently-ran", recentlyUsedHandler(db));
 
 /**
  * Start up the server on the configured port.

@@ -1,16 +1,16 @@
 /**
- * Gets the list of apps that have ran recently.
+ * Gets the list of apps that have been used recently by the authenticated user.
  *
- * @module apps/recentlyRan
+ * @module apps/recentlyUsed
  */
 
-import { getPublicAppIDs } from "../clients/permissions";
 import { validateInterval, validateLimit } from "../util";
 import * as config from "../configuration";
+import constants from "../constants";
 import logger from "../logging";
 
 // All apps returned by this query are DE apps, so the system ID can be constant.
-const recentlyRanAppsQuery = `
+const recentlyUsedAppsQuery = `
     SELECT DISTINCT
         a.id,
         'de' AS system_id,
@@ -32,36 +32,33 @@ const recentlyRanAppsQuery = `
         TRUE AS is_public,
         max(j.start_date) AS most_recent_start_date
     FROM jobs j
-    JOIN apps a on CAST(a.id AS text) = j.app_id
-    JOIN integration_data d on a.integration_data_id = d.id
-    JOIN users u on d.user_id = u.id
-    WHERE a.id = ANY ($3)
+    JOIN users ju ON j.user_id = ju.id
+    JOIN apps a ON CAST(a.id AS text) = j.app_id
+    LEFT JOIN integration_data d ON a.integration_data_id = d.id
+    LEFT JOIN users u ON d.user_id = u.id
+    WHERE ju.username = $1
     AND NOT a.deleted
     AND NOT a.disabled
-    AND j.start_date > now() - CAST($4 AS interval)
+    AND j.start_date > now() - CAST($3 AS interval)
     GROUP BY a.id, a.name, a.description, a.wiki_url, a.integration_date, a.edited_date, u.username
     ORDER BY most_recent_start_date DESC
-    LIMIT $5
+    LIMIT $4
 `;
 
-export const getRecentlyRanApps = async (
+export const getRecentlyUsedApps = async (
     db,
     username,
     limit,
     startDateInterval
 ) => {
-    const appIDs = await getPublicAppIDs();
-
     const { rows } = await db
-        .query(recentlyRanAppsQuery, [
+        .query(recentlyUsedAppsQuery, [
             username,
             config.favoritesGroupIndex,
-            appIDs,
             startDateInterval,
             limit,
         ])
         .catch((e) => {
-            logger.error(`something bad happened: ${e}`);
             throw e;
         });
 
@@ -83,10 +80,10 @@ const getHandler = (db) => async (req, res) => {
         const limit = validateLimit(req?.query?.limit) ?? 10;
         const startDateInterval =
             (await validateInterval(db, req?.query["start-date-interval"])) ??
-            "1 week";
+            constants.DEFAULT_START_DATE_INTERVAL;
 
         // Query the database.
-        const rows = await getRecentlyRanApps(
+        const rows = await getRecentlyUsedApps(
             db,
             username,
             limit,

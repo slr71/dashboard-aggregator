@@ -28,7 +28,8 @@ const appsQuery = `
             WHERE aca.app_id = a.id
             AND w.user_id = u.id
             AND acg.child_index = $3
-         ) AS is_favorite
+         ) AS is_favorite,
+         (a.id = ANY ($4)) AS is_public
     FROM apps a
     JOIN integration_data i ON a.integration_data_id = i.id
     JOIN users u ON i.user_id = u.id
@@ -39,9 +40,14 @@ ORDER BY a.integration_date DESC
    LIMIT $2
  `;
 
-export const getData = async (db, username, limit) => {
+export const getData = async (db, username, limit, publicAppIDs) => {
     const { rows } = await db
-        .query(appsQuery, [username, limit, config.favoritesGroupIndex])
+        .query(appsQuery, [
+            username,
+            limit,
+            config.favoritesGroupIndex,
+            publicAppIDs,
+        ])
         .catch((e) => {
             throw e;
         });
@@ -50,9 +56,7 @@ export const getData = async (db, username, limit) => {
         throw new Error("no rows returned");
     }
 
-    // Add the is_public flag to each app before returning the listing.
-    const publicAppIds = new Set(await getPublicAppIDs());
-    return rows.map((app) => ({ ...app, is_public: publicAppIds.has(app.id) }));
+    return rows;
 };
 
 const getHandler = (db) => {
@@ -60,7 +64,8 @@ const getHandler = (db) => {
         try {
             const username = req.params.username;
             const limit = validateLimit(req?.query?.limit) ?? 10;
-            const rows = await getData(db, username, limit);
+            const publicAppIDs = await getPublicAppIDs();
+            const rows = await getData(db, username, limit, publicAppIDs);
             res.status(200).json({ apps: rows });
         } catch (e) {
             logger.error(e.message);

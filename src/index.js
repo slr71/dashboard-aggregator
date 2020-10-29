@@ -1,6 +1,7 @@
 import express from "express";
 import { Client } from "pg";
 
+import { getPublicAppIDs } from "./clients/permissions";
 import * as config from "./configuration";
 import logger, { errorLogger, requestLogger } from "./logging";
 import recentlyAddedHandler, {
@@ -95,17 +96,24 @@ app.get("/users/:username", async (req, res) => {
             (await validateInterval(req?.query["start-date-interval"])) ??
             constants.DEFAULT_START_DATE_INTERVAL;
         const limit = validateLimit(req?.query?.limit) ?? 10;
+        const publicAppIDs = await getPublicAppIDs();
         const feeds = await createFeeds(limit);
 
         const retval = {
             apps: {
-                recentlyAdded: await recentlyAddedData(db, username, limit),
-                public: await publicAppsData(db, username, limit),
+                recentlyAdded: await recentlyAddedData(
+                    db,
+                    username,
+                    limit,
+                    publicAppIDs
+                ),
+                public: await publicAppsData(db, username, limit, publicAppIDs),
                 recentlyUsed: await getRecentlyUsedApps(
                     db,
                     username,
                     limit,
-                    startDateInterval
+                    startDateInterval,
+                    publicAppIDs
                 ),
             },
             analyses: {
@@ -126,10 +134,11 @@ app.get("/", async (req, res) => {
     try {
         const limit = validateLimit(req?.query?.limit) ?? 10;
         const feeds = await createFeeds(limit);
+        const publicAppIDs = await getPublicAppIDs();
 
         const retval = {
             apps: {
-                public: await publicAppsData(db, null, limit),
+                public: await publicAppsData(db, null, limit, publicAppIDs),
             },
             feeds,
         };

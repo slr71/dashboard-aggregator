@@ -4,6 +4,7 @@
  * @module apps/recentlyUsed
  */
 
+import { getPublicAppIDs } from "../clients/permissions";
 import { validateInterval, validateLimit } from "../util";
 import * as config from "../configuration";
 import constants from "../constants";
@@ -29,7 +30,7 @@ const recentlyUsedAppsQuery = `
             AND acg.child_index = $2
             AND aca.app_id = a.id
         ) AS is_favorite,
-        TRUE AS is_public,
+        (a.id = ANY ($3)) AS is_public,
         max(j.start_date) AS most_recent_start_date
     FROM jobs j
     JOIN users ju ON j.user_id = ju.id
@@ -39,22 +40,24 @@ const recentlyUsedAppsQuery = `
     WHERE ju.username = $1
     AND NOT a.deleted
     AND NOT a.disabled
-    AND j.start_date > now() - CAST($3 AS interval)
+    AND j.start_date > now() - CAST($4 AS interval)
     GROUP BY a.id, a.name, a.description, a.wiki_url, a.integration_date, a.edited_date, u.username
     ORDER BY most_recent_start_date DESC
-    LIMIT $4
+    LIMIT $5
 `;
 
 export const getRecentlyUsedApps = async (
     db,
     username,
     limit,
-    startDateInterval
+    startDateInterval,
+    publicAppIDs
 ) => {
     const { rows } = await db
         .query(recentlyUsedAppsQuery, [
             username,
             config.favoritesGroupIndex,
+            publicAppIDs,
             startDateInterval,
             limit,
         ])
@@ -81,13 +84,15 @@ const getHandler = (db) => async (req, res) => {
         const startDateInterval =
             (await validateInterval(db, req?.query["start-date-interval"])) ??
             constants.DEFAULT_START_DATE_INTERVAL;
+        const publicAppIDs = await getPublicAppIDs();
 
         // Query the database.
         const rows = await getRecentlyUsedApps(
             db,
             username,
             limit,
-            startDateInterval
+            startDateInterval,
+            publicAppIDs
         );
 
         res.status(200).json({ apps: rows });

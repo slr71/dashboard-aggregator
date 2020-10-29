@@ -42,14 +42,12 @@ ORDER BY a.integration_date DESC
  LIMIT $4
 `;
 
-export const getData = async (db, username, limit) => {
-    const appIDs = await getPublicAppIDs();
-
+export const getData = async (db, username, limit, publicAppIDs) => {
     const { rows } = await db
         .query(publicAppsQuery, [
             username,
             config.favoritesGroupIndex,
-            appIDs,
+            publicAppIDs,
             limit,
         ])
         .catch((e) => {
@@ -67,7 +65,8 @@ const getHandler = (db) => async (req, res) => {
     try {
         const username = req.params.username;
         const limit = validateLimit(req?.query?.limit) ?? 10;
-        const rows = await getData(db, username, limit);
+        const publicAppIDs = await getPublicAppIDs();
+        const rows = await getData(db, username, limit, publicAppIDs);
         res.status(200).json({ apps: rows });
     } catch (e) {
         logger.error(e.message);

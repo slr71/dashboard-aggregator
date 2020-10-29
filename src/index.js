@@ -1,20 +1,24 @@
 import express from "express";
 import { Client } from "pg";
 
+import { getPublicAppIDs } from "./clients/permissions";
 import * as config from "./configuration";
 import logger, { errorLogger, requestLogger } from "./logging";
 import recentlyAddedHandler, {
     getData as recentlyAddedData,
 } from "./apps/recentlyAdded";
 import publicAppsHandler, { getData as publicAppsData } from "./apps/public";
+import recentlyUsedHandler, { getRecentlyUsedApps } from "./apps/recentlyUsed";
 import recentAnalysesHandler, {
     getData as recentAnalysesData,
 } from "./analyses/recent";
 import runningAnalysesHandler, {
     getData as runningAnalysesData,
 } from "./analyses/running";
+import { validateInterval, validateLimit } from "./util";
 
 import WebsiteFeed, { feedURL, VideoFeed } from "./feed";
+import constants from "./constants";
 
 logger.info("creating database client");
 
@@ -82,18 +86,35 @@ app.get("/healthz", async (req, res) => {
 
 app.get("/users/:username/apps/public", publicAppsHandler(db));
 app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
+app.get("/users/:username/apps/recently-used", recentlyUsedHandler(db));
 app.get("/users/:username/analyses/recent", recentAnalysesHandler(db));
 app.get("/users/:username/analyses/running", runningAnalysesHandler(db));
 app.get("/users/:username", async (req, res) => {
     try {
         const username = req.params.username;
-        const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const startDateInterval =
+            (await validateInterval(req?.query["start-date-interval"])) ??
+            constants.DEFAULT_START_DATE_INTERVAL;
+        const limit = validateLimit(req?.query?.limit) ?? 10;
+        const publicAppIDs = await getPublicAppIDs();
         const feeds = await createFeeds(limit);
 
         const retval = {
             apps: {
-                recentlyAdded: await recentlyAddedData(db, username, limit),
-                public: await publicAppsData(db, username, limit),
+                recentlyAdded: await recentlyAddedData(
+                    db,
+                    username,
+                    limit,
+                    publicAppIDs
+                ),
+                public: await publicAppsData(db, username, limit, publicAppIDs),
+                recentlyUsed: await getRecentlyUsedApps(
+                    db,
+                    username,
+                    limit,
+                    startDateInterval,
+                    publicAppIDs
+                ),
             },
             analyses: {
                 recent: await recentAnalysesData(db, username, limit),
@@ -111,12 +132,13 @@ app.get("/users/:username", async (req, res) => {
 
 app.get("/", async (req, res) => {
     try {
-        const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const limit = validateLimit(req?.query?.limit) ?? 10;
         const feeds = await createFeeds(limit);
+        const publicAppIDs = await getPublicAppIDs();
 
         const retval = {
             apps: {
-                public: await publicAppsData(db, null, limit),
+                public: await publicAppsData(db, null, limit, publicAppIDs),
             },
             feeds,
         };
@@ -129,7 +151,7 @@ app.get("/", async (req, res) => {
 
 app.get("/feeds", async (req, res) => {
     try {
-        const limit = parseInt(req?.query?.limit ?? "10", 10);
+        const limit = validateLimit(req?.query?.limit) ?? 10;
         const feeds = await createFeeds(limit);
 
         res.status(200).json({
@@ -142,6 +164,7 @@ app.get("/feeds", async (req, res) => {
 });
 
 app.get("/apps/public", publicAppsHandler(db));
+app.get("/apps/recently-ran", recentlyUsedHandler(db));
 
 /**
  * Start up the server on the configured port.

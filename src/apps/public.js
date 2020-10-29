@@ -7,11 +7,12 @@
  */
 
 import { getPublicAppIDs } from "../clients/permissions";
+import { validateLimit } from "../util";
 import * as config from "../configuration";
 import logger from "../logging";
 
 // All apps returned by this query are DE apps, so the system ID can be constant.
-const getQuery = (appIDs) => `
+const publicAppsQuery = `
  SELECT a.id,
         'de' AS system_id,
         a.name,
@@ -25,29 +26,30 @@ const getQuery = (appIDs) => `
             JOIN workspace w ON authenticated_user.id = w.user_id
             JOIN app_category_group acg ON w.root_category_id = acg.parent_category_id
             JOIN app_category_app aca ON acg.child_category_id = aca.app_category_id
-            WHERE authenticated_user.username = $2
-            AND acg.child_index = $3
+            WHERE authenticated_user.username = $1
+            AND acg.child_index = $2
             AND aca.app_id = a.id
          ) AS is_favorite,
          true AS is_public
    FROM apps a
    JOIN integration_data d on a.integration_data_id = d.id
    JOIN users u on d.user_id = u.id
-  WHERE a.id in ( ${appIDs.map((_, index) => `$${index + 4}`).join(",")} )
+  WHERE a.id = ANY ($3)
     AND a.deleted = false
     AND a.disabled = false
     AND a.integration_date IS NOT NULL
 ORDER BY a.integration_date DESC
- LIMIT $1
+ LIMIT $4
 `;
 
-export const getData = async (db, username, limit) => {
-    const appIDs = await getPublicAppIDs();
-
-    const q = getQuery(appIDs);
-
+export const getData = async (db, username, limit, publicAppIDs) => {
     const { rows } = await db
-        .query(q, [limit, username, config.favoritesGroupIndex, ...appIDs])
+        .query(publicAppsQuery, [
+            username,
+            config.favoritesGroupIndex,
+            publicAppIDs,
+            limit,
+        ])
         .catch((e) => {
             throw e;
         });
@@ -61,11 +63,10 @@ export const getData = async (db, username, limit) => {
 
 const getHandler = (db) => async (req, res) => {
     try {
-        // the parseInt isn't necessary, but it'll throw an error if the value
-        // isn't a number.
         const username = req.params.username;
-        const limit = parseInt(req?.query?.limit ?? "10", 10);
-        const rows = await getData(db, username, limit);
+        const limit = validateLimit(req?.query?.limit) ?? 10;
+        const publicAppIDs = await getPublicAppIDs();
+        const rows = await getData(db, username, limit, publicAppIDs);
         res.status(200).json({ apps: rows });
     } catch (e) {
         logger.error(e.message);

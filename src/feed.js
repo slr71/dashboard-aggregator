@@ -44,6 +44,7 @@ const transformVideoItem = (item) => {
         link,
     } = item;
     const description = item["media:group"]["media:description"][0];
+    const thumbnailUrl = item["media:group"]["media:thumbnail"][0]["$"].url;
 
     return {
         id,
@@ -53,6 +54,7 @@ const transformVideoItem = (item) => {
         author,
         publication_date,
         link,
+        thumbnailUrl,
     };
 };
 

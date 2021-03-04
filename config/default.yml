@@ -22,3 +22,7 @@ videos:
 
 apps:
     favorites_group_index: 1
+
+app-exposer:
+    url: http://app-exposer
+    user: dashboard-aggregator

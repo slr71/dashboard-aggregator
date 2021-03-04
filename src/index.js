@@ -2,6 +2,7 @@ import express from "express";
 import { Client } from "pg";
 
 import { getPublicAppIDs } from "./clients/permissions";
+
 import * as config from "./configuration";
 import logger, { errorLogger, requestLogger } from "./logging";
 import recentlyAddedHandler, {
@@ -17,7 +18,11 @@ import runningAnalysesHandler, {
 } from "./analyses/running";
 import { validateInterval, validateLimit } from "./util";
 
-import WebsiteFeed, { feedURL, VideoFeed } from "./feed";
+import WebsiteFeed, {
+    feedURL,
+    VideoFeed,
+    DashboardInstantLaunchesFeed,
+} from "./feed";
 import constants from "./constants";
 
 logger.info("creating database client");
@@ -49,6 +54,10 @@ eventsFeed.scheduleRefresh().start();
 const videosFeed = new VideoFeed(config.videosURL);
 videosFeed.pullItems();
 videosFeed.scheduleRefresh().start();
+
+const ilFeed = new DashboardInstantLaunchesFeed(config.appExposerURL);
+ilFeed.pullItems();
+ilFeed.scheduleRefresh().start();
 
 logger.info("setting up the express server");
 const app = express();
@@ -120,6 +129,7 @@ app.get("/users/:username", async (req, res) => {
                 recent: await recentAnalysesData(db, username, limit),
                 running: await runningAnalysesData(db, username, limit),
             },
+            instantLaunches: ilFeed.getItems(),
             feeds,
         };
 

@@ -9,6 +9,8 @@ import path from "path";
 import Parser from "rss-parser";
 import { CronJob } from "cron";
 import logger from "./logging";
+import * as config from "./configuration";
+import fetch from "node-fetch";
 
 const transformFeedItem = (item) => {
     const {
@@ -191,5 +193,58 @@ export class VideoFeed extends WebsiteFeed {
         });
 
         logger.info(`done printing items from ${this.feedURL}`);
+    }
+}
+
+export class DashboardInstantLaunchesFeed extends WebsiteFeed {
+    constructor(feedURL, limit) {
+        super(feedURL, limit);
+    }
+
+    async pullItems() {
+        const reqURL = new URL(this.feedURL);
+        reqURL.pathname = `/instantlaunches/metadata`;
+        reqURL.searchParams.set("user", config.appExposerUser);
+        reqURL.searchParams.set("attribute", "ui_location");
+        reqURL.searchParams.set("value", "dashboard");
+
+        logger.info(`pulling items from ${reqURL.toString()}`);
+
+        const results = await fetch(reqURL)
+            .then(async (resp) => {
+                if (!resp.ok) {
+                    const msg = await resp.text();
+                    throw new Error(msg);
+                }
+                return resp;
+            })
+            .then((resp) => resp.json())
+            .then((data) => data.avus.map((avu) => avu.id))
+            .then((ids) =>
+                ids.map((id) => {
+                    const ilURL = new URL(config.appExposerURL);
+                    reqURL.pathname = `/instantlaunches/${id}`;
+                    return fetch(ilURL)
+                        .then(async (resp) => {
+                            if (!resp.ok) {
+                                const msg = await resp.text();
+                                throw new Error(msg);
+                            }
+                            return resp;
+                        })
+                        .then((resp) => resp.json());
+                })
+            )
+            .then((promises) => Promise.allSettled(promises));
+
+        this.items = await results
+            .filter((res) => res.status !== "rejected")
+            .map((res) => res.value);
+    }
+
+    async printItems() {
+        logger.info(`printing items from ${this.feedURL}`);
+
+        console.log(JSON.stringify(this.items, null, 2));
     }
 }

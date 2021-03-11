@@ -129,7 +129,7 @@ app.get("/users/:username", async (req, res) => {
                 recent: await recentAnalysesData(db, username, limit),
                 running: await runningAnalysesData(db, username, limit),
             },
-            instantLaunches: ilFeed.getItems(),
+            instantLaunches: await ilFeed.getItems(),
             feeds,
         };
 

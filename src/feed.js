@@ -203,14 +203,14 @@ export class DashboardInstantLaunchesFeed extends WebsiteFeed {
 
     async pullItems() {
         const reqURL = new URL(this.feedURL);
-        reqURL.pathname = `/instantlaunches/metadata`;
+        reqURL.pathname = `/instantlaunches/metadata/full`;
         reqURL.searchParams.set("user", config.appExposerUser);
         reqURL.searchParams.set("attribute", "ui_location");
         reqURL.searchParams.set("value", "dashboard");
 
         logger.info(`pulling items from ${reqURL.toString()}`);
 
-        const results = await fetch(reqURL)
+        this.items = await fetch(reqURL)
             .then(async (resp) => {
                 if (!resp.ok) {
                     const msg = await resp.text();
@@ -218,28 +218,7 @@ export class DashboardInstantLaunchesFeed extends WebsiteFeed {
                 }
                 return resp;
             })
-            .then((resp) => resp.json())
-            .then((data) => data.avus.map((avu) => avu.id))
-            .then((ids) =>
-                ids.map((id) => {
-                    const ilURL = new URL(config.appExposerURL);
-                    reqURL.pathname = `/instantlaunches/${id}`;
-                    return fetch(ilURL)
-                        .then(async (resp) => {
-                            if (!resp.ok) {
-                                const msg = await resp.text();
-                                throw new Error(msg);
-                            }
-                            return resp;
-                        })
-                        .then((resp) => resp.json());
-                })
-            )
-            .then((promises) => Promise.allSettled(promises));
-
-        this.items = await results
-            .filter((res) => res.status !== "rejected")
-            .map((res) => res.value);
+            .then((resp) => resp.json());
     }
 
     async printItems() {

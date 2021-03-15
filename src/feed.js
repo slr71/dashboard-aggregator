@@ -9,6 +9,8 @@ import path from "path";
 import Parser from "rss-parser";
 import { CronJob } from "cron";
 import logger from "./logging";
+import * as config from "./configuration";
+import fetch from "node-fetch";
 
 const transformFeedItem = (item) => {
     const {
@@ -191,5 +193,37 @@ export class VideoFeed extends WebsiteFeed {
         });
 
         logger.info(`done printing items from ${this.feedURL}`);
+    }
+}
+
+export class DashboardInstantLaunchesFeed extends WebsiteFeed {
+    constructor(feedURL, limit) {
+        super(feedURL, limit);
+    }
+
+    async pullItems() {
+        const reqURL = new URL(this.feedURL);
+        reqURL.pathname = `/instantlaunches/metadata/full`;
+        reqURL.searchParams.set("user", config.appExposerUser);
+        reqURL.searchParams.set("attribute", "ui_location");
+        reqURL.searchParams.set("value", "dashboard");
+
+        logger.info(`pulling items from ${reqURL.toString()}`);
+
+        this.items = await fetch(reqURL)
+            .then(async (resp) => {
+                if (!resp.ok) {
+                    const msg = await resp.text();
+                    throw new Error(msg);
+                }
+                return resp;
+            })
+            .then((resp) => resp.json());
+    }
+
+    async printItems() {
+        logger.info(`printing items from ${this.feedURL}`);
+
+        console.log(JSON.stringify(this.items, null, 2));
     }
 }

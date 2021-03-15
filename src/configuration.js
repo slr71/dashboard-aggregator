@@ -116,6 +116,14 @@ export const eventsFeedPath = config.get("website.feeds.events");
 export const videosURL = config.get("videos.url");
 
 /**
+ * The URL to the app-exposer service.
+ */
+export const appExposerURL =
+    config.get("app-exposer.url") || "http://app-exposer";
+
+export const appExposerUser = config.get("app-exposer.user");
+
+/**
  * The index of the favorites group in the user's workspace.
  */
 export const favoritesGroupIndex = parseInt(

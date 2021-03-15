@@ -1,7 +1,11 @@
 listen_port: 3000
 
 db:
-    uri: insert-db-uri-here
+    user: user
+    password: password
+    host: host
+    port: port
+    database: database
 
 logging:
     level: info
@@ -22,3 +26,7 @@ videos:
 
 apps:
     favorites_group_index: 1
+
+app-exposer:
+    url: http://app-exposer
+    user: dashboard-aggregator

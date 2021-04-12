@@ -56,8 +56,8 @@ videosFeed.pullItems();
 videosFeed.scheduleRefresh().start();
 
 const ilFeed = new DashboardInstantLaunchesFeed(config.appExposerURL);
-ilFeed.pullItems();
-ilFeed.scheduleRefresh().start();
+// ilFeed.pullItems();
+// ilFeed.scheduleRefresh().start();
 
 logger.info("setting up the express server");
 const app = express();

@@ -221,6 +221,26 @@ export class DashboardInstantLaunchesFeed extends WebsiteFeed {
             .then((resp) => resp.json());
     }
 
+    async getItems() {
+        const reqURL = new URL(this.feedURL);
+        reqURL.pathname = `/instantlaunches/metadata/full`;
+        reqURL.searchParams.set("user", config.appExposerUser);
+        reqURL.searchParams.set("attribute", "ui_location");
+        reqURL.searchParams.set("value", "dashboard");
+
+        logger.info(`pulling items from ${reqURL.toString()}`);
+
+        return await fetch(reqURL)
+            .then(async (resp) => {
+                if (!resp.ok) {
+                    const msg = await resp.text();
+                    throw new Error(msg);
+                }
+                return resp;
+            })
+            .then((resp) => resp.json());
+    }
+
     async printItems() {
         logger.info(`printing items from ${this.feedURL}`);
 

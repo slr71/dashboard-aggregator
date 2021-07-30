@@ -36,7 +36,7 @@ spec:
                 path: production.yaml
       containers:
         - name: dashboard-aggregator
-          image: discoenv/dashboard-aggregator
+          image: harbor.cyverse.org/de/dashboard-aggregator
           resources:
             requests:
               cpu: "100m"

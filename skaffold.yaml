@@ -10,5 +10,5 @@ build:
   tagPolicy:
     gitCommit: {}
   artifacts:
-    - image: discoenv/dashboard-aggregator
+    - image: harbor.cyverse.org/de/dashboard-aggregator
   local: {}

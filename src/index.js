@@ -126,8 +126,8 @@ app.get("/users/:username", async (req, res) => {
                 ),
             },
             analyses: {
-                recent: await recentAnalysesData(db, username, limit),
-                running: await runningAnalysesData(db, username, limit),
+                recent: await recentAnalysesData(username, limit),
+                running: await runningAnalysesData(username, limit),
             },
             instantLaunches: await ilFeed.getItems(),
             feeds,

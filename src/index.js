@@ -96,8 +96,8 @@ app.get("/healthz", async (req, res) => {
 app.get("/users/:username/apps/public", publicAppsHandler(db));
 app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
 app.get("/users/:username/apps/recently-used", recentlyUsedHandler(db));
-app.get("/users/:username/analyses/recent", recentAnalysesHandler(db));
-app.get("/users/:username/analyses/running", runningAnalysesHandler(db));
+app.get("/users/:username/analyses/recent", recentAnalysesHandler());
+app.get("/users/:username/analyses/running", runningAnalysesHandler());
 app.get("/users/:username", async (req, res) => {
     try {
         const username = req.params.username;

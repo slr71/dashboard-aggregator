@@ -29,6 +29,7 @@ const validate = () => {
     validateConfigSetting("permissions.uri");
     validateConfigSetting("permissions.public_group");
     validateConfigSetting("apps.favorites_group_index");
+    validateConfigSetting("apps.url");
 };
 
 validate();
@@ -130,3 +131,9 @@ export const favoritesGroupIndex = parseInt(
     config.get("apps.favorites_group_index"),
     10
 );
+
+/**
+ * The URL to the apps service.
+ *
+ */
+export const appsURL = config.get("apps.url");

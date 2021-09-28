@@ -107,7 +107,8 @@ app.get("/users/:username", async (req, res) => {
         const limit = validateLimit(req?.query?.limit) ?? 10;
         const publicAppIDs = await getPublicAppIDs();
         const feeds = await createFeeds(limit);
-
+        const recent = recentAnalysesData(username, limit);
+        const running = runningAnalysesData(username, limit);
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAddedData(
@@ -126,8 +127,8 @@ app.get("/users/:username", async (req, res) => {
                 ),
             },
             analyses: {
-                recent: await recentAnalysesData(username, limit),
-                running: await runningAnalysesData(username, limit),
+                recent: await recent,
+                running: await running,
             },
             instantLaunches: await ilFeed.getItems(),
             feeds,

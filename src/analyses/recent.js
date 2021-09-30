@@ -14,7 +14,11 @@ import * as config from "../configuration";
 export const getData = async (username, limit) => {
     try {
         const { data } = await axios.get(
-            `${config.appsURL}/analyses?sort-field=startdate&limit=${limit}&sort-dir=DESC&user=${username}`
+            `${
+                config.appsURL
+            }/analyses?sort-field=startdate&limit=${limit}&sort-dir=DESC&user=${
+                username?.split("@")[0]
+            }`
         );
         logger.info(
             "Recent analyses for user " + username + ": " + JSON.stringify(data)

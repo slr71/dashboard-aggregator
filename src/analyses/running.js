@@ -14,7 +14,9 @@ import * as config from "../configuration";
 export const getData = async (username, limit) => {
     try {
         const { data } = await axios.get(
-            `${config.appsURL}/analyses?limit=${limit}&user=${username}&filter=[{"field":"status", "value":"Running"}]`
+            `${config.appsURL}/analyses?limit=${limit}&user=${
+                username?.split("@")[0]
+            }&filter=[{"field":"status", "value":"Running"}]`
         );
         logger.info(
             "Running analyses for user " +
@@ -31,7 +33,7 @@ export const getData = async (username, limit) => {
 const getHandler = () => async (req, res) => {
     try {
         const limit = validateLimit(req?.query?.limit) ?? 10;
-        const username = req?.params?.username;
+        const username = req?.params?.username?.split("@")[0];
         const rows = await getData(username, limit);
         res.status(200).json(rows);
     } catch (e) {

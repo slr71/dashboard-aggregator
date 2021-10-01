@@ -127,8 +127,8 @@ app.get("/users/:username", async (req, res) => {
                 ),
             },
             analyses: {
-                recent: await recent,
-                running: await running,
+                recent: (await recent)?.analyses,
+                running: (await running)?.analyses,
             },
             instantLaunches: await ilFeed.getItems(),
             feeds,

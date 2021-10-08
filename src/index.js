@@ -163,11 +163,26 @@ app.get("/", async (req, res) => {
     try {
         const limit = validateLimit(req?.query?.limit) ?? 10;
         const feeds = await createFeeds(limit);
+        const username = "anonymous";
+        const startDateInterval =
+            (await validateInterval(req?.query["start-date-interval"])) ??
+            constants.DEFAULT_START_DATE_INTERVAL;
         const publicAppIDs = await getPublicAppIDs();
-
+        const featuredAppIds = await getFilteredTargetIds({
+            targetTypes: ["app"],
+            targetIds: publicAppIDs,
+            avus: constants.FEATURED_APPS_AVUS,
+            username,
+        });
         const retval = {
             apps: {
-                public: await publicAppsData(db, null, limit, publicAppIDs),
+                popularFeatured: await popularFeaturedData(
+                    db,
+                    username,
+                    limit,
+                    featuredAppIds,
+                    startDateInterval
+                ),
             },
             feeds,
         };

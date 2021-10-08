@@ -33,14 +33,14 @@ const popularFeaturedAppsQuery = `
                )       AS is_favorite,
            true        AS is_public
     FROM apps a
-             JOIN jobs j on j.app_id = CAST(a.id as TEXT)
+             LEFT JOIN jobs j on j.app_id = CAST(a.id as TEXT)
              JOIN integration_data d on a.integration_data_id = d.id
              JOIN users u on d.user_id = u.id
     WHERE a.id = ANY ($3)
       AND a.deleted = false
       AND a.disabled = false
       AND a.integration_date IS NOT NULL
-      AND j.start_date >= (now() - CAST($4 AS interval))
+      AND (j.start_date >= (now() - CAST($4 AS interval)) OR j.start_date IS NULL)
     GROUP BY a.id, u.id
     ORDER BY job_count DESC
         LIMIT $2

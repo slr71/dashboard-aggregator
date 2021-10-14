@@ -30,3 +30,8 @@ apps:
 app-exposer:
     url: http://app-exposer
     user: dashboard-aggregator
+
+metadata:
+    url: http://metadata
+    featured_apps_attr: cyverse-blessed
+    featured_apps_value: "true"

@@ -2,6 +2,7 @@ import express from "express";
 import { Client } from "pg";
 
 import { getPublicAppIDs } from "./clients/permissions";
+import { getFilteredTargetIds } from "./clients/metadata";
 
 import * as config from "./configuration";
 import logger, { errorLogger, requestLogger } from "./logging";
@@ -16,6 +17,9 @@ import recentAnalysesHandler, {
 import runningAnalysesHandler, {
     getData as runningAnalysesData,
 } from "./analyses/running";
+import popularFeaturedHandler, {
+    getData as popularFeaturedData,
+} from "./apps/popularFeatured";
 import { validateInterval, validateLimit } from "./util";
 
 import WebsiteFeed, {
@@ -98,6 +102,7 @@ app.get("/users/:username/apps/recently-added", recentlyAddedHandler(db));
 app.get("/users/:username/apps/recently-used", recentlyUsedHandler(db));
 app.get("/users/:username/analyses/recent", recentAnalysesHandler());
 app.get("/users/:username/analyses/running", runningAnalysesHandler());
+app.get("/users/:username/apps/popular-featured", popularFeaturedHandler(db));
 app.get("/users/:username", async (req, res) => {
     try {
         const username = req.params.username;
@@ -106,6 +111,12 @@ app.get("/users/:username", async (req, res) => {
             constants.DEFAULT_START_DATE_INTERVAL;
         const limit = validateLimit(req?.query?.limit) ?? 10;
         const publicAppIDs = await getPublicAppIDs();
+        const featuredAppIds = await getFilteredTargetIds({
+            targetTypes: ["app"],
+            targetIds: publicAppIDs,
+            avus: constants.FEATURED_APPS_AVUS,
+            username,
+        });
         const feeds = await createFeeds(limit);
         const recent = recentAnalysesData(username, limit);
         const running = runningAnalysesData(username, limit);
@@ -124,6 +135,13 @@ app.get("/users/:username", async (req, res) => {
                     limit,
                     startDateInterval,
                     publicAppIDs
+                ),
+                popularFeatured: await popularFeaturedData(
+                    db,
+                    username,
+                    limit,
+                    featuredAppIds,
+                    startDateInterval
                 ),
             },
             analyses: {
@@ -145,11 +163,26 @@ app.get("/", async (req, res) => {
     try {
         const limit = validateLimit(req?.query?.limit) ?? 10;
         const feeds = await createFeeds(limit);
+        const username = "anonymous";
+        const startDateInterval =
+            (await validateInterval(req?.query["start-date-interval"])) ??
+            constants.DEFAULT_START_DATE_INTERVAL;
         const publicAppIDs = await getPublicAppIDs();
-
+        const featuredAppIds = await getFilteredTargetIds({
+            targetTypes: ["app"],
+            targetIds: publicAppIDs,
+            avus: constants.FEATURED_APPS_AVUS,
+            username,
+        });
         const retval = {
             apps: {
-                public: await publicAppsData(db, null, limit, publicAppIDs),
+                popularFeatured: await popularFeaturedData(
+                    db,
+                    username,
+                    limit,
+                    featuredAppIds,
+                    startDateInterval
+                ),
             },
             feeds,
         };

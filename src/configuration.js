@@ -137,3 +137,18 @@ export const favoritesGroupIndex = parseInt(
  *
  */
 export const appsURL = config.get("apps.url");
+
+/**
+ * The base URI for the metadata service
+ */
+export const metadataURL = config.get("metadata.url");
+
+/**
+ * The metadata attribute applied to featured apps
+ */
+export const featuredAppsAttr = config.get("metadata.featured_apps_attr");
+
+/**
+ * The metadata value applied to featured apps
+ */
+export const featuredAppsValue = config.get("metadata.featured_apps_value");

@@ -84,7 +84,9 @@ const getHandler = (db) => {
             res.status(200).json({ apps: rows });
         } catch (e) {
             logger.error(e.message);
-            res.status(500).send(`error running query: ${e.message}`);
+            res.status(500).json({
+                reason: `error running query: ${e.message}`,
+            });
         }
     };
 };

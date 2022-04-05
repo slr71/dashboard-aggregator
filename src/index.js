@@ -185,7 +185,7 @@ app.get("/users/:username", async (req, res) => {
         res.status(200).json(retval);
     } catch (e) {
         logger.error(e);
-        res.status(500).send(`error running query: ${e}`);
+        res.status(500).json({ reason: `error running query: ${e}` });
     }
 });
 
@@ -218,8 +218,8 @@ app.get("/", async (req, res) => {
         };
         res.status(200).json(retval);
     } catch (e) {
-        logger.error(e.message);
-        res.status(500).send(`error running query: ${e.message}`);
+        logger.error(e);
+        res.status(500).json({ reason: `error running query: ${e.message}` });
     }
 });
 
@@ -232,8 +232,8 @@ app.get("/feeds", async (req, res) => {
             feeds,
         });
     } catch (e) {
-        logger.error(e.message);
-        res.status(500).send(`error getting feeds: ${e.message}`);
+        logger.error(e);
+        res.status(500).json({ reason: `error getting feeds: ${e.message}` });
     }
 });
 

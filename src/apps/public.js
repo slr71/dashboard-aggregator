@@ -26,7 +26,7 @@ const publicAppsQuery = `
         a.wiki_url,
         a.integration_date,
         a.edited_date,
-        u.username,
+        a.integrator_username AS username,
         EXISTS (
             SELECT * FROM users authenticated_user
             JOIN workspace w ON authenticated_user.id = w.user_id
@@ -37,9 +37,7 @@ const publicAppsQuery = `
             AND aca.app_id = a.id
          ) AS is_favorite,
          true AS is_public
-   FROM apps a
-   JOIN integration_data d on a.integration_data_id = d.id
-   JOIN users u on d.user_id = u.id
+   FROM app_listing a
   WHERE a.id = ANY ($3)
     AND a.deleted = false
     AND a.disabled = false

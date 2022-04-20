@@ -3,7 +3,7 @@ FROM node:16-alpine
 COPY . /src
 WORKDIR /src
 
-RUN npm install
+RUN npm ci
 RUN npm run build
 
 EXPOSE 3000

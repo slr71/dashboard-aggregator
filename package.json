@@ -71,11 +71,13 @@
     ]
   },
   "dependencies": {
+    "@opentelemetry/exporter-jaeger": "^1.0.1",
     "@opentelemetry/instrumentation-express": "^0.28.0",
     "@opentelemetry/instrumentation-http": "^0.27.0",
     "@opentelemetry/instrumentation-pg": "^0.28.0",
     "@opentelemetry/resources": "^1.0.1",
     "@opentelemetry/sdk-node": "^0.27.0",
+    "@opentelemetry/sdk-trace-base": "^1.0.1",
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "axios": "^0.21.4",
     "config": "^3.3.0",

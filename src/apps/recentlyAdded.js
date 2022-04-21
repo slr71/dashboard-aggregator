@@ -47,27 +47,31 @@ ORDER BY a.integration_date DESC
  `;
 
 export const getData = async (db, username, limit, publicAppIDs) => {
-    const span = tracer().startSpan("apps/recentlyAdded getData");
-    try {
-        const { rows } = await db
-            .query(appsQuery, [
-                username,
-                limit,
-                config.favoritesGroupIndex,
-                publicAppIDs,
-            ])
-            .catch((e) => {
-                throw e;
-            });
+    return tracer().startActiveSpan(
+        "apps/recentlyAdded getData",
+        async (span) => {
+            try {
+                const { rows } = await db
+                    .query(appsQuery, [
+                        username,
+                        limit,
+                        config.favoritesGroupIndex,
+                        publicAppIDs,
+                    ])
+                    .catch((e) => {
+                        throw e;
+                    });
 
-        if (!rows) {
-            throw new Error("no rows returned");
+                if (!rows) {
+                    throw new Error("no rows returned");
+                }
+
+                return rows;
+            } finally {
+                span.end();
+            }
         }
-
-        return rows;
-    } finally {
-        span.end();
-    }
+    );
 };
 
 const getHandler = (db) => {

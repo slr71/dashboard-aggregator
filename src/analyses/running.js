@@ -18,29 +18,33 @@ function tracer() {
 }
 
 export const getData = async (username, limit) => {
-    const span = tracer().startSpan("analyses/running getData");
-    try {
-        const { data } = await axios.get(
-            `${config.appsURL}/analyses?limit=${limit}&user=${
-                username?.split("@")[0]
-            }&filter=[{"field":"status", "value":"Running"}]`
-        );
-        logger.info(
-            "Running analyses for user " +
-                username +
-                ": " +
-                JSON.stringify(data)
-        );
-        return data;
-    } catch (e) {
-        span.setStatus({
-            code: opentelemetry.SpanStatusCode.ERROR,
-            message: e,
-        });
-        throw new Error(e);
-    } finally {
-        span.end();
-    }
+    return tracer().startActiveSpan(
+        "analyses/running getData",
+        async (span) => {
+            try {
+                const { data } = await axios.get(
+                    `${config.appsURL}/analyses?limit=${limit}&user=${
+                        username?.split("@")[0]
+                    }&filter=[{"field":"status", "value":"Running"}]`
+                );
+                logger.info(
+                    "Running analyses for user " +
+                        username +
+                        ": " +
+                        JSON.stringify(data)
+                );
+                return data;
+            } catch (e) {
+                span.setStatus({
+                    code: opentelemetry.SpanStatusCode.ERROR,
+                    message: e,
+                });
+                throw new Error(e);
+            } finally {
+                span.end();
+            }
+        }
+    );
 };
 
 const getHandler = () => async (req, res) => {

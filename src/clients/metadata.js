@@ -7,6 +7,12 @@
 import * as config from "../configuration";
 import fetch from "node-fetch";
 
+import opentelemetry from "@opentelemetry/api";
+
+function tracer() {
+    return opentelemetry.trace.getTracer("dashboard-aggregator");
+}
+
 /**
  * @param username - The username of the authenticated user
  * @param targetTypes - Array of the types of resources to include
@@ -20,26 +26,32 @@ export const getFilteredTargetIds = async ({
     avus,
     targetIds,
 }) => {
-    const reqURL = new URL(config.metadataURL);
-    reqURL.pathname = "/avus/filter-targets";
-    reqURL.search = new URLSearchParams({ user: username }).toString();
-    const body = {
-        "target-types": targetTypes,
-        "target-ids": targetIds,
-        avus,
-    };
+    return tracer().startActiveSpan("getPublicAppIDs", async (span) => {
+        try {
+            const reqURL = new URL(config.metadataURL);
+            reqURL.pathname = "/avus/filter-targets";
+            reqURL.search = new URLSearchParams({ user: username }).toString();
+            const body = {
+                "target-types": targetTypes,
+                "target-ids": targetIds,
+                avus,
+            };
 
-    const resp = await fetch(reqURL, {
-        method: "post",
-        body: JSON.stringify(body),
-        headers: { "Content-Type": "application/json" },
+            const resp = await fetch(reqURL, {
+                method: "post",
+                body: JSON.stringify(body),
+                headers: { "Content-Type": "application/json" },
+            });
+
+            if (!resp.ok) {
+                const msg = await resp.text();
+                throw new Error(msg);
+            }
+
+            const data = await resp.json();
+            return data["target-ids"];
+        } finally {
+            span.end();
+        }
     });
-
-    if (!resp.ok) {
-        const msg = await resp.text();
-        throw new Error(msg);
-    }
-
-    const data = await resp.json();
-    return data["target-ids"];
 };

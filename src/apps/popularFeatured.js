@@ -59,27 +59,31 @@ export const getData = async (
     featuredAppIds,
     startDateInterval
 ) => {
-    const span = tracer().startSpan("apps/popularFeatured getData");
-    try {
-        const { rows } = await db
-            .query(popularFeaturedAppsQuery, [
-                username,
-                limit,
-                featuredAppIds,
-                startDateInterval,
-            ])
-            .catch((e) => {
-                throw e;
-            });
+    return tracer().startActiveSpan(
+        "apps/popularFeatured getData",
+        async (span) => {
+            try {
+                const { rows } = await db
+                    .query(popularFeaturedAppsQuery, [
+                        username,
+                        limit,
+                        featuredAppIds,
+                        startDateInterval,
+                    ])
+                    .catch((e) => {
+                        throw e;
+                    });
 
-        if (!rows) {
-            throw new Error("no rows returned");
+                if (!rows) {
+                    throw new Error("no rows returned");
+                }
+
+                return rows;
+            } finally {
+                span.end();
+            }
         }
-
-        return rows;
-    } finally {
-        span.end();
-    }
+    );
 };
 
 const getHandler = (db) => async (req, res) => {

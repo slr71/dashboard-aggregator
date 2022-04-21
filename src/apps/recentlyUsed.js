@@ -10,6 +10,12 @@ import * as config from "../configuration";
 import constants from "../constants";
 import logger from "../logging";
 
+import opentelemetry from "@opentelemetry/api";
+
+function tracer() {
+    return opentelemetry.trace.getTracer("dashboard-aggregator");
+}
+
 // All apps returned by this query are DE apps, so the system ID can be constant.
 const recentlyUsedAppsQuery = `
     SELECT DISTINCT
@@ -53,28 +59,37 @@ export const getRecentlyUsedApps = async (
     startDateInterval,
     publicAppIDs
 ) => {
-    const { rows } = await db
-        .query(recentlyUsedAppsQuery, [
-            username,
-            config.favoritesGroupIndex,
-            publicAppIDs,
-            startDateInterval,
-            limit,
-        ])
-        .catch((e) => {
-            throw e;
-        });
+    return tracer().startActiveSpan(
+        "apps/recentlyAdded getData",
+        async (span) => {
+            try {
+                const { rows } = await db
+                    .query(recentlyUsedAppsQuery, [
+                        username,
+                        config.favoritesGroupIndex,
+                        publicAppIDs,
+                        startDateInterval,
+                        limit,
+                    ])
+                    .catch((e) => {
+                        throw e;
+                    });
 
-    if (!rows) {
-        throw new Error("no rows returned");
-    }
+                if (!rows) {
+                    throw new Error("no rows returned");
+                }
 
-    // Remove unwanted columns from the result; doing this in SQL made the query a little clunky.
-    for (const r of rows) {
-        delete r["most_recent_start_date"];
-    }
+                // Remove unwanted columns from the result; doing this in SQL made the query a little clunky.
+                for (const r of rows) {
+                    delete r["most_recent_start_date"];
+                }
 
-    return rows;
+                return rows;
+            } finally {
+                span.end();
+            }
+        }
+    );
 };
 
 const getHandler = (db) => async (req, res) => {

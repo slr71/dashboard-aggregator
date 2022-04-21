@@ -76,20 +76,21 @@ app.use(errorLogger);
 app.use(requestLogger);
 
 const createFeeds = async (limit) => {
-    const span = tracer().startSpan("createFeeds");
-    try {
-        const newsItems = await newsFeed.getItems();
-        const eventsItems = await eventsFeed.getItems();
-        const videosItems = await videosFeed.getItems();
+    return tracer().startActiveSpan("createFeeds", async (span) => {
+        try {
+            const newsItems = await newsFeed.getItems();
+            const eventsItems = await eventsFeed.getItems();
+            const videosItems = await videosFeed.getItems();
 
-        return {
-            news: newsItems.slice(0, limit),
-            events: eventsItems.slice(0, limit),
-            videos: videosItems.slice(0, limit),
-        };
-    } finally {
-        span.end();
-    }
+            return {
+                news: newsItems.slice(0, limit),
+                events: eventsItems.slice(0, limit),
+                videos: videosItems.slice(0, limit),
+            };
+        } finally {
+            span.end();
+        }
+    });
 };
 
 /**

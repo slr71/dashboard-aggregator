@@ -26,7 +26,7 @@ export const getFilteredTargetIds = async ({
     avus,
     targetIds,
 }) => {
-    return tracer().startActiveSpan("getPublicAppIDs", async (span) => {
+    return tracer().startActiveSpan("getFilteredTargetIds", async (span) => {
         try {
             const reqURL = new URL(config.metadataURL);
             reqURL.pathname = "/avus/filter-targets";

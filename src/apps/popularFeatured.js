@@ -11,6 +11,12 @@ import logger from "../logging";
 import { validateInterval, validateLimit } from "../util";
 import constants from "../constants";
 
+import opentelemetry from "@opentelemetry/api";
+
+function tracer() {
+    return opentelemetry.trace.getTracer("dashboard-aggregator");
+}
+
 const popularFeaturedAppsQuery = `
     SELECT a.id,
            'de'        AS system_id,
@@ -53,22 +59,27 @@ export const getData = async (
     featuredAppIds,
     startDateInterval
 ) => {
-    const { rows } = await db
-        .query(popularFeaturedAppsQuery, [
-            username,
-            limit,
-            featuredAppIds,
-            startDateInterval,
-        ])
-        .catch((e) => {
-            throw e;
-        });
+    const span = tracer().startSpan("apps/popularFeatured getData");
+    try {
+        const { rows } = await db
+            .query(popularFeaturedAppsQuery, [
+                username,
+                limit,
+                featuredAppIds,
+                startDateInterval,
+            ])
+            .catch((e) => {
+                throw e;
+            });
 
-    if (!rows) {
-        throw new Error("no rows returned");
+        if (!rows) {
+            throw new Error("no rows returned");
+        }
+
+        return rows;
+    } finally {
+        span.end();
     }
-
-    return rows;
 };
 
 const getHandler = (db) => async (req, res) => {

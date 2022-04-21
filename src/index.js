@@ -29,6 +29,12 @@ import WebsiteFeed, {
 } from "./feed";
 import constants from "./constants";
 
+import opentelemetry from "@opentelemetry/api";
+
+function tracer() {
+    return opentelemetry.trace.getTracer("dashboard-aggregator");
+}
+
 logger.info("creating database client");
 
 // Set up the database connection. May have to change to a Pool in the near future.
@@ -70,15 +76,20 @@ app.use(errorLogger);
 app.use(requestLogger);
 
 const createFeeds = async (limit) => {
-    const newsItems = await newsFeed.getItems();
-    const eventsItems = await eventsFeed.getItems();
-    const videosItems = await videosFeed.getItems();
+    const span = tracer().startSpan("createFeeds");
+    try {
+        const newsItems = await newsFeed.getItems();
+        const eventsItems = await eventsFeed.getItems();
+        const videosItems = await videosFeed.getItems();
 
-    return {
-        news: newsItems.slice(0, limit),
-        events: eventsItems.slice(0, limit),
-        videos: videosItems.slice(0, limit),
-    };
+        return {
+            news: newsItems.slice(0, limit),
+            events: eventsItems.slice(0, limit),
+            videos: videosItems.slice(0, limit),
+        };
+    } finally {
+        span.end();
+    }
 };
 
 /**
@@ -110,16 +121,16 @@ app.get("/users/:username", async (req, res) => {
             (await validateInterval(req?.query["start-date-interval"])) ??
             constants.DEFAULT_START_DATE_INTERVAL;
         const limit = validateLimit(req?.query?.limit) ?? 10;
+        const recent = recentAnalysesData(username, limit);
+        const running = runningAnalysesData(username, limit);
         const publicAppIDs = await getPublicAppIDs();
-        const featuredAppIds = await getFilteredTargetIds({
+        const featuredAppIds = getFilteredTargetIds({
             targetTypes: ["app"],
             targetIds: publicAppIDs,
             avus: constants.FEATURED_APPS_AVUS,
             username,
         });
         const feeds = await createFeeds(limit);
-        const recent = recentAnalysesData(username, limit);
-        const running = runningAnalysesData(username, limit);
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAddedData(
@@ -140,7 +151,7 @@ app.get("/users/:username", async (req, res) => {
                     db,
                     username,
                     limit,
-                    featuredAppIds,
+                    await featuredAppIds,
                     startDateInterval
                 ),
             },
@@ -168,7 +179,7 @@ app.get("/", async (req, res) => {
             (await validateInterval(req?.query["start-date-interval"])) ??
             constants.DEFAULT_START_DATE_INTERVAL;
         const publicAppIDs = await getPublicAppIDs();
-        const featuredAppIds = await getFilteredTargetIds({
+        const featuredAppIds = getFilteredTargetIds({
             targetTypes: ["app"],
             targetIds: publicAppIDs,
             avus: constants.FEATURED_APPS_AVUS,
@@ -180,7 +191,7 @@ app.get("/", async (req, res) => {
                     db,
                     username,
                     limit,
-                    featuredAppIds,
+                    await featuredAppIds,
                     startDateInterval
                 ),
             },

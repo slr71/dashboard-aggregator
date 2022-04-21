@@ -11,7 +11,14 @@ import { validateLimit } from "../util";
 import axios from "axios";
 import * as config from "../configuration";
 
+import opentelemetry from "@opentelemetry/api";
+
+function tracer() {
+    return opentelemetry.trace.getTracer("dashboard-aggregator");
+}
+
 export const getData = async (username, limit) => {
+    const span = tracer().startSpan("analyses/recent getData");
     try {
         const { data } = await axios.get(
             `${
@@ -25,7 +32,13 @@ export const getData = async (username, limit) => {
         );
         return data;
     } catch (e) {
+        span.setStatus({
+            code: opentelemetry.SpanStatusCode.ERROR,
+            message: e,
+        });
         throw new Error(e);
+    } finally {
+        span.end();
     }
 };
 

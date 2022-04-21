@@ -11,6 +11,12 @@ import * as config from "../configuration";
 import logger from "../logging";
 import { validateLimit } from "../util";
 
+import opentelemetry from "@opentelemetry/api";
+
+function tracer() {
+    return opentelemetry.trace.getTracer("dashboard-aggregator");
+}
+
 // All apps returned by this query are DE apps, so the system ID can be constant.
 const appsQuery = `
   SELECT a.id,
@@ -41,22 +47,27 @@ ORDER BY a.integration_date DESC
  `;
 
 export const getData = async (db, username, limit, publicAppIDs) => {
-    const { rows } = await db
-        .query(appsQuery, [
-            username,
-            limit,
-            config.favoritesGroupIndex,
-            publicAppIDs,
-        ])
-        .catch((e) => {
-            throw e;
-        });
+    const span = tracer().startSpan("apps/recentlyAdded getData");
+    try {
+        const { rows } = await db
+            .query(appsQuery, [
+                username,
+                limit,
+                config.favoritesGroupIndex,
+                publicAppIDs,
+            ])
+            .catch((e) => {
+                throw e;
+            });
 
-    if (!rows) {
-        throw new Error("no rows returned");
+        if (!rows) {
+            throw new Error("no rows returned");
+        }
+
+        return rows;
+    } finally {
+        span.end();
     }
-
-    return rows;
 };
 
 const getHandler = (db) => {

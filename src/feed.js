@@ -12,6 +12,12 @@ import logger from "./logging";
 import * as config from "./configuration";
 import fetch from "node-fetch";
 
+import opentelemetry from "@opentelemetry/api";
+
+function tracer() {
+    return opentelemetry.trace.getTracer("dashboard-aggregator");
+}
+
 const transformFeedItem = (item) => {
     const {
         guid: id,
@@ -74,43 +80,73 @@ export default class WebsiteFeed {
     }
 
     scheduleRefresh() {
-        const job = new CronJob("0 * * * *", () => {
-            logger.info(`starting refresh of ${this.feedURL}`);
-            this.pullItems();
-        });
-        return job;
+        return tracer().startActiveSpan(
+            "WebsiteFeed.scheduleRefresh",
+            (span) => {
+                try {
+                    const job = new CronJob("0 * * * *", () => {
+                        logger.info(`starting refresh of ${this.feedURL}`);
+                        this.pullItems();
+                    });
+                    return job;
+                } finally {
+                    span.end();
+                }
+            }
+        );
     }
 
     async pullItems() {
-        logger.info(`pulling items from ${this.feedURL}`);
+        return tracer().startActiveSpan(
+            "WebsiteFeed.pullItems",
+            async (span) => {
+                try {
+                    logger.info(`pulling items from ${this.feedURL}`);
 
-        const parser = new Parser({
-            customFields: {
-                item: [
-                    ["dc:creator", "author"],
-                    ["description", "content", { includeSnippet: true }],
-                ],
-            },
-        });
-        const feed = await parser.parseURL(this.feedURL);
+                    const parser = new Parser({
+                        customFields: {
+                            item: [
+                                ["dc:creator", "author"],
+                                [
+                                    "description",
+                                    "content",
+                                    { includeSnippet: true },
+                                ],
+                            ],
+                        },
+                    });
+                    const feed = await parser.parseURL(this.feedURL);
 
-        // Make sure the latest post is first.
-        feed.items.reverse();
+                    // Make sure the latest post is first.
+                    feed.items.reverse();
 
-        if (feed.items.length > this.limit) {
-            logger.debug(`using for-loop population for ${this.feedURL}`);
+                    if (feed.items.length > this.limit) {
+                        logger.debug(
+                            `using for-loop population for ${this.feedURL}`
+                        );
 
-            let newList = [];
-            for (let i = 0; i < this.limit; i++) {
-                newList.push(transformFeedItem(feed.items[i]));
+                        let newList = [];
+                        for (let i = 0; i < this.limit; i++) {
+                            newList.push(transformFeedItem(feed.items[i]));
+                        }
+                        this.items = [...newList];
+                    } else {
+                        logger.debug(
+                            `using map-spread population for ${this.feedURL}`
+                        );
+                        this.items = [
+                            ...feed.items.map((item) =>
+                                transformFeedItem(item)
+                            ),
+                        ];
+                    }
+
+                    logger.info(`done pulling items from ${this.feedURL}`);
+                } finally {
+                    span.end();
+                }
             }
-            this.items = [...newList];
-        } else {
-            logger.debug(`using map-spread population for ${this.feedURL}`);
-            this.items = [...feed.items.map((item) => transformFeedItem(item))];
-        }
-
-        logger.info(`done pulling items from ${this.feedURL}`);
+        );
     }
 
     // Useful for debugging.
@@ -131,10 +167,19 @@ export default class WebsiteFeed {
     }
 
     async getItems() {
-        if (this.items.length === 0) {
-            await this.pullItems();
-        }
-        return this.items;
+        return tracer().startActiveSpan(
+            "WebsiteFeed.getItems",
+            async (span) => {
+                try {
+                    if (this.items.length === 0) {
+                        await this.pullItems();
+                    }
+                    return this.items;
+                } finally {
+                    span.end();
+                }
+            }
+        );
     }
 }
 
@@ -144,34 +189,44 @@ export class VideoFeed extends WebsiteFeed {
     }
 
     async pullItems() {
-        logger.info(`pulling items from ${this.feedURL}`);
+        return tracer().startActiveSpan("VideoFeed.pullItems", async (span) => {
+            try {
+                logger.info(`pulling items from ${this.feedURL}`);
 
-        const parser = new Parser({
-            customFields: {
-                item: [["media:group", "media:group"]],
-            },
-        });
-        const feed = await parser.parseURL(this.feedURL);
+                const parser = new Parser({
+                    customFields: {
+                        item: [["media:group", "media:group"]],
+                    },
+                });
+                const feed = await parser.parseURL(this.feedURL);
 
-        // Make sure the latest post is first.
-        feed.items.reverse();
+                // Make sure the latest post is first.
+                feed.items.reverse();
 
-        if (feed.items.length > this.limit) {
-            logger.debug(`using for-loop population for ${this.feedURL}`);
+                if (feed.items.length > this.limit) {
+                    logger.debug(
+                        `using for-loop population for ${this.feedURL}`
+                    );
 
-            let newList = [];
-            for (let i = 0; i < this.limit; i++) {
-                newList.push(transformVideoItem(feed.items[i]));
+                    let newList = [];
+                    for (let i = 0; i < this.limit; i++) {
+                        newList.push(transformVideoItem(feed.items[i]));
+                    }
+                    this.items = [...newList];
+                } else {
+                    logger.debug(
+                        `using map-spread population for ${this.feedURL}`
+                    );
+                    this.items = [
+                        ...feed.items.map((item) => transformVideoItem(item)),
+                    ];
+                }
+
+                logger.info(`done pulling items from ${this.feedURL}`);
+            } finally {
+                span.end();
             }
-            this.items = [...newList];
-        } else {
-            logger.debug(`using map-spread population for ${this.feedURL}`);
-            this.items = [
-                ...feed.items.map((item) => transformVideoItem(item)),
-            ];
-        }
-
-        logger.info(`done pulling items from ${this.feedURL}`);
+        });
     }
 
     // Useful for debugging.
@@ -202,43 +257,61 @@ export class DashboardInstantLaunchesFeed extends WebsiteFeed {
     }
 
     async pullItems() {
-        const reqURL = new URL(this.feedURL);
-        reqURL.pathname = `/instantlaunches/metadata/full`;
-        reqURL.searchParams.set("user", config.appExposerUser);
-        reqURL.searchParams.set("attribute", "ui_location");
-        reqURL.searchParams.set("value", "dashboard");
+        return tracer().startActiveSpan(
+            "DashboardInstantLaunchesFeed.pullItems",
+            async (span) => {
+                try {
+                    const reqURL = new URL(this.feedURL);
+                    reqURL.pathname = `/instantlaunches/metadata/full`;
+                    reqURL.searchParams.set("user", config.appExposerUser);
+                    reqURL.searchParams.set("attribute", "ui_location");
+                    reqURL.searchParams.set("value", "dashboard");
 
-        logger.info(`pulling items from ${reqURL.toString()}`);
+                    logger.info(`pulling items from ${reqURL.toString()}`);
 
-        this.items = await fetch(reqURL)
-            .then(async (resp) => {
-                if (!resp.ok) {
-                    const msg = await resp.text();
-                    throw new Error(msg);
+                    this.items = await fetch(reqURL)
+                        .then(async (resp) => {
+                            if (!resp.ok) {
+                                const msg = await resp.text();
+                                throw new Error(msg);
+                            }
+                            return resp;
+                        })
+                        .then((resp) => resp.json());
+                } finally {
+                    span.end();
                 }
-                return resp;
-            })
-            .then((resp) => resp.json());
+            }
+        );
     }
 
     async getItems() {
-        const reqURL = new URL(this.feedURL);
-        reqURL.pathname = `/instantlaunches/metadata/full`;
-        reqURL.searchParams.set("user", config.appExposerUser);
-        reqURL.searchParams.set("attribute", "ui_location");
-        reqURL.searchParams.set("value", "dashboard");
+        return tracer().startActiveSpan(
+            "DashboardInstantLaunchesFeed.getItems",
+            async (span) => {
+                try {
+                    const reqURL = new URL(this.feedURL);
+                    reqURL.pathname = `/instantlaunches/metadata/full`;
+                    reqURL.searchParams.set("user", config.appExposerUser);
+                    reqURL.searchParams.set("attribute", "ui_location");
+                    reqURL.searchParams.set("value", "dashboard");
 
-        logger.info(`pulling items from ${reqURL.toString()}`);
+                    logger.info(`pulling items from ${reqURL.toString()}`);
 
-        return await fetch(reqURL)
-            .then(async (resp) => {
-                if (!resp.ok) {
-                    const msg = await resp.text();
-                    throw new Error(msg);
+                    return await fetch(reqURL)
+                        .then(async (resp) => {
+                            if (!resp.ok) {
+                                const msg = await resp.text();
+                                throw new Error(msg);
+                            }
+                            return resp;
+                        })
+                        .then((resp) => resp.json());
+                } finally {
+                    span.end();
                 }
-                return resp;
-            })
-            .then((resp) => resp.json());
+            }
+        );
     }
 
     async printItems() {

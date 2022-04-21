@@ -122,45 +122,61 @@ app.get("/users/:username", async (req, res) => {
             (await validateInterval(req?.query["start-date-interval"])) ??
             constants.DEFAULT_START_DATE_INTERVAL;
         const limit = validateLimit(req?.query?.limit) ?? 10;
-        const recent = recentAnalysesData(username, limit);
-        const running = runningAnalysesData(username, limit);
-        const publicAppIDs = await getPublicAppIDs();
+
+        const publicAppIDs = getPublicAppIDs();
         const featuredAppIds = getFilteredTargetIds({
             targetTypes: ["app"],
-            targetIds: publicAppIDs,
+            targetIds: await publicAppIDs,
             avus: constants.FEATURED_APPS_AVUS,
             username,
         });
+
+        // Analyses data
+        const recentAnalyses = recentAnalysesData(username, limit);
+        const runningAnalyses = runningAnalysesData(username, limit);
+
+        // Apps data
+        const recentlyAdded = recentlyAddedData(
+            db,
+            username,
+            limit,
+            await publicAppIDs
+        );
+        const publicApps = publicAppsData(
+            db,
+            username,
+            limit,
+            await publicAppIDs
+        );
+        const recentlyUsed = getRecentlyUsedApps(
+            db,
+            username,
+            limit,
+            startDateInterval,
+            await publicAppIDs
+        );
+        const popularFeatured = popularFeaturedData(
+            db,
+            username,
+            limit,
+            await featuredAppIds,
+            startDateInterval
+        );
+
         const feeds = await createFeeds(limit);
+        const instantLaunches = ilFeed.getItems();
         const retval = {
             apps: {
-                recentlyAdded: await recentlyAddedData(
-                    db,
-                    username,
-                    limit,
-                    publicAppIDs
-                ),
-                public: await publicAppsData(db, username, limit, publicAppIDs),
-                recentlyUsed: await getRecentlyUsedApps(
-                    db,
-                    username,
-                    limit,
-                    startDateInterval,
-                    publicAppIDs
-                ),
-                popularFeatured: await popularFeaturedData(
-                    db,
-                    username,
-                    limit,
-                    await featuredAppIds,
-                    startDateInterval
-                ),
+                recentlyAdded: await recentlyAdded,
+                public: await publicApps,
+                recentlyUsed: await recentlyUsed,
+                popularFeatured: await popularFeatured,
             },
             analyses: {
-                recent: (await recent)?.analyses,
-                running: (await running)?.analyses,
+                recent: (await recentAnalyses)?.analyses,
+                running: (await runningAnalyses)?.analyses,
             },
-            instantLaunches: await ilFeed.getItems(),
+            instantLaunches: await instantLaunches,
             feeds,
         };
 
@@ -174,18 +190,18 @@ app.get("/users/:username", async (req, res) => {
 app.get("/", async (req, res) => {
     try {
         const limit = validateLimit(req?.query?.limit) ?? 10;
-        const feeds = await createFeeds(limit);
         const username = "anonymous";
         const startDateInterval =
             (await validateInterval(req?.query["start-date-interval"])) ??
             constants.DEFAULT_START_DATE_INTERVAL;
-        const publicAppIDs = await getPublicAppIDs();
+        const publicAppIDs = getPublicAppIDs();
         const featuredAppIds = getFilteredTargetIds({
             targetTypes: ["app"],
-            targetIds: publicAppIDs,
+            targetIds: await publicAppIDs,
             avus: constants.FEATURED_APPS_AVUS,
             username,
         });
+        const feeds = await createFeeds(limit);
         const retval = {
             apps: {
                 popularFeatured: await popularFeaturedData(

@@ -167,8 +167,6 @@ app.get("/users/:username", async (req, res) => {
             startDateInterval
         );
 
-        const f = await feeds;
-
         const retval = {
             apps: {
                 recentlyAdded: await recentlyAdded,
@@ -181,7 +179,7 @@ app.get("/users/:username", async (req, res) => {
                 running: (await runningAnalyses)?.analyses,
             },
             instantLaunches: await instantLaunches,
-            f,
+            feeds: await feeds,
         };
 
         res.status(200).json(retval);
@@ -206,7 +204,6 @@ app.get("/", async (req, res) => {
             avus: constants.FEATURED_APPS_AVUS,
             username,
         });
-        const f = await feeds;
         const retval = {
             apps: {
                 popularFeatured: await popularFeaturedData(
@@ -217,7 +214,7 @@ app.get("/", async (req, res) => {
                     startDateInterval
                 ),
             },
-            f,
+            feeds: await feeds,
         };
         res.status(200).json(retval);
     } catch (e) {

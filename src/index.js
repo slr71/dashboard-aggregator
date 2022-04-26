@@ -53,17 +53,17 @@ const newsFeed = new WebsiteFeed(
     feedURL(config.websiteURL, config.newsFeedPath)
 );
 newsFeed.pullItems(); // populate the local copy.
-newsFeed.scheduleRefresh().start(); // schedule the refresh of the local copy.
+newsFeed.scheduleRefresh().then((f) => f.start()); // schedule the refresh of the local copy.
 
 const eventsFeed = new WebsiteFeed(
     feedURL(config.websiteURL, config.eventsFeedPath)
 );
 eventsFeed.pullItems();
-eventsFeed.scheduleRefresh().start();
+eventsFeed.scheduleRefresh().then((f) => f.start());
 
 const videosFeed = new VideoFeed(config.videosURL);
 videosFeed.pullItems();
-videosFeed.scheduleRefresh().start();
+videosFeed.scheduleRefresh().then((f) => f.start());
 
 const ilFeed = new DashboardInstantLaunchesFeed(config.appExposerURL);
 // ilFeed.pullItems();

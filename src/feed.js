@@ -79,7 +79,7 @@ export default class WebsiteFeed {
         this.items = [];
     }
 
-    scheduleRefresh() {
+    async scheduleRefresh() {
         return tracer().startActiveSpan(
             "WebsiteFeed.scheduleRefresh",
             (span) => {

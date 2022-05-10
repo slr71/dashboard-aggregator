@@ -54,7 +54,7 @@ const getHandler = () => async (req, res) => {
         res.status(200).json(rows);
     } catch (e) {
         logger.error(e);
-        res.status(500).send(e.message);
+        res.status(500).json({ reason: e.message });
     }
 };
 

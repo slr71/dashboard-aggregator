@@ -26,7 +26,7 @@ const recentlyUsedAppsQuery = `
         a.wiki_url,
         a.integration_date,
         a.edited_date,
-        u.username,
+        a.integrator_username AS username,
         EXISTS (
             SELECT * FROM users authenticated_user
             JOIN workspace w ON authenticated_user.id = w.user_id
@@ -40,14 +40,12 @@ const recentlyUsedAppsQuery = `
         max(j.start_date) AS most_recent_start_date
     FROM jobs j
     JOIN users ju ON j.user_id = ju.id
-    JOIN apps a ON CAST(a.id AS text) = j.app_id
-    LEFT JOIN integration_data d ON a.integration_data_id = d.id
-    LEFT JOIN users u ON d.user_id = u.id
+    JOIN app_listing a ON CAST(a.id AS text) = j.app_id
     WHERE ju.username = $1
     AND NOT a.deleted
     AND NOT a.disabled
     AND j.start_date > now() - CAST($4 AS interval)
-    GROUP BY a.id, a.name, a.description, a.wiki_url, a.integration_date, a.edited_date, u.username
+    GROUP BY a.id, a.name, a.description, a.wiki_url, a.integration_date, a.edited_date, a.integrator_username
     ORDER BY most_recent_start_date DESC
     LIMIT $5
 `;
@@ -113,7 +111,7 @@ const getHandler = (db) => async (req, res) => {
         res.status(200).json({ apps: rows });
     } catch (e) {
         logger.error(e.message);
-        res.status(500).send(`error running query: ${e.message}`);
+        res.status(500).json({ reason: `error running query: ${e.message}` });
     }
 };
 

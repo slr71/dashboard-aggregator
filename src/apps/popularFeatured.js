@@ -7,6 +7,8 @@
 
 import { getPublicAppIDs } from "../clients/permissions";
 import { getFilteredTargetIds } from "../clients/metadata";
+
+import * as config from "../configuration";
 import logger from "../logging";
 import { validateInterval, validateLimit } from "../util";
 import constants from "../constants";
@@ -25,7 +27,7 @@ const popularFeaturedAppsQuery = `
            a.wiki_url,
            a.integration_date,
            a.edited_date,
-           u.username,
+           a.integrator_username AS username,
            count(j.id) AS job_count,
            EXISTS(
                    SELECT *
@@ -34,20 +36,18 @@ const popularFeaturedAppsQuery = `
                             JOIN app_category_group acg ON w.root_category_id = acg.parent_category_id
                             JOIN app_category_app aca ON acg.child_category_id = aca.app_category_id
                    WHERE authenticated_user.username = $1
-                     AND acg.child_index = $2
+                     AND acg.child_index = $3
                      AND aca.app_id = a.id
                )       AS is_favorite,
            true        AS is_public
-    FROM apps a
+    FROM app_listing a
              LEFT JOIN jobs j on j.app_id = CAST(a.id as TEXT)
-             JOIN integration_data d on a.integration_data_id = d.id
-             JOIN users u on d.user_id = u.id
-    WHERE a.id = ANY ($3)
+    WHERE a.id = ANY ($4)
       AND a.deleted = false
       AND a.disabled = false
       AND a.integration_date IS NOT NULL
-      AND (j.start_date >= (now() - CAST($4 AS interval)) OR j.start_date IS NULL)
-    GROUP BY a.id, u.id
+      AND (j.start_date >= (now() - CAST($5 AS interval)) OR j.start_date IS NULL)
+    GROUP BY a.id, a.name, a.description, a.wiki_url, a.integration_date, a.edited_date, a.integrator_username
     ORDER BY job_count DESC
         LIMIT $2
 `;
@@ -67,6 +67,7 @@ export const getData = async (
                     .query(popularFeaturedAppsQuery, [
                         username,
                         limit,
+                        config.favoritesGroupIndex,
                         featuredAppIds,
                         startDateInterval,
                     ])
@@ -110,7 +111,7 @@ const getHandler = (db) => async (req, res) => {
         res.status(200).json({ apps: rows });
     } catch (e) {
         logger.error(e);
-        res.status(500).send(e.message);
+        res.status(500).json({ reason: e.message });
     }
 };
 

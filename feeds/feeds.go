@@ -31,6 +31,11 @@ type DashboardFeeder interface {
 	TransformFeedItems(ctx context.Context, feed *gofeed.Feed)
 }
 
+const InstantLaunchesFeedName = "instant-launches"
+const NewsFeedName = "news"
+const EventsFeedName = "events"
+const VideosFeedName = "videos"
+
 type PublicFeeds struct {
 	feeders map[string]DashboardFeeder
 	crons   []*cron.Cron

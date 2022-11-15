@@ -14,6 +14,12 @@ type PermissionsAPI struct {
 	permissionsURL *url.URL
 }
 
+func NewPermissionsAPI(permissionsURL *url.URL) *PermissionsAPI {
+	return &PermissionsAPI{
+		permissionsURL: permissionsURL,
+	}
+}
+
 type Permission struct {
 	ResourceName string `json:"resource_name"`
 }
@@ -44,5 +50,4 @@ func (p *PermissionsAPI) GetPublicIDS(publicGroup string) ([]string, error) {
 		return item.ResourceName
 	})
 	return retval, nil
-
 }

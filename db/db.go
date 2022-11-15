@@ -3,10 +3,16 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"time"
 
+	"github.com/cyverse-de/dashboard-aggregator/config"
 	"github.com/cyverse-de/go-mod/logging"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jmoiron/sqlx"
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 var log = logging.Log.WithField("package", "db")
@@ -84,4 +90,21 @@ func WithTX(tx *goqu.TxDatabase) QueryOption {
 	return func(s *QuerySettings) {
 		s.tx = tx
 	}
+}
+
+func Connect(config *config.DatabaseConfiguration) (*sqlx.DB, error) {
+	dbURI := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%d/%s?sslmode=disable",
+		config.User,
+		config.Password,
+		config.Host,
+		config.Port,
+		config.Name,
+	)
+	dbconn := otelsqlx.MustConnect("postgres", dbURI,
+		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
+	log.Info("done connecting to the database")
+	dbconn.SetMaxOpenConns(10)
+	dbconn.SetConnMaxIdleTime(time.Minute)
+	return dbconn, nil
 }

@@ -14,10 +14,18 @@ import (
 
 var log = logging.Log.WithField("package", "apis")
 
-type Rows map[string]interface{}
+type AnalysisListing struct {
+	Analyses []interface{} `json:"analyses"`
+}
 
 type AnalysisAPI struct {
 	appsURL *url.URL
+}
+
+func NewAnalysisAPI(appsURL *url.URL) *AnalysisAPI {
+	return &AnalysisAPI{
+		appsURL: appsURL,
+	}
 }
 
 func fixUsername(username string) string {
@@ -28,7 +36,7 @@ func fixUsername(username string) string {
 	return username
 }
 
-func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (Rows, error) {
+func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisListing, error) {
 	log := log.WithField("context", "running analyses")
 
 	u := fixUsername(username)
@@ -73,15 +81,15 @@ func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (Rows, error) 
 		return nil, err
 	}
 
-	var data Rows
+	var data AnalysisListing
 	if err = json.Unmarshal(b, &data); err != nil {
 		return nil, err
 	}
 
-	return data, nil
+	return &data, nil
 }
 
-func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (Rows, error) {
+func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (*AnalysisListing, error) {
 	log := log.WithField("context", "recent analyses")
 
 	u := fixUsername(username)
@@ -115,11 +123,11 @@ func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (Rows, error) {
 		return nil, err
 	}
 
-	var data Rows
+	var data AnalysisListing
 	if err = json.Unmarshal(b, &data); err != nil {
 		return nil, err
 	}
 
-	return data, nil
+	return &data, nil
 
 }

@@ -14,9 +14,13 @@ type MetadataAPI struct {
 	metadataURL *url.URL
 }
 
-type AVUs map[string]string
+func NewMetadataAPI(metadataURL *url.URL) *MetadataAPI {
+	return &MetadataAPI{
+		metadataURL: metadataURL,
+	}
+}
 
-func (m *MetadataAPI) GetFilteredTargetIDS(username string, targetTypes []string, avus AVUs, targetIDs []string) ([]string, error) {
+func (m *MetadataAPI) GetFilteredTargetIDs(username string, targetTypes []string, avus map[string]string, targetIDs []string) ([]string, error) {
 	u := fixUsername(username)
 
 	fullURL := *m.metadataURL

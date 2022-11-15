@@ -67,16 +67,12 @@ func (p PublicFeeds) FeedItems(ctx context.Context, name string) []DashboardItem
 	return p.feeders[name].GetItems(ctx)
 }
 
-func (p PublicFeeds) Marshallable(ctx context.Context) map[string]map[string][]DashboardItem {
-	var retval map[string][]DashboardItem
+func (p PublicFeeds) Marshallable(ctx context.Context) map[string][]DashboardItem {
+	retval := make(map[string][]DashboardItem)
 
 	for name, feeder := range p.feeders {
 		retval[name] = feeder.GetItems(ctx)
 	}
 
-	result := map[string]map[string][]DashboardItem{
-		"feeders": retval,
-	}
-
-	return result
+	return retval
 }

@@ -29,7 +29,7 @@ type PermissionsResponse struct {
 
 func (p *PermissionsAPI) GetPublicIDS(publicGroup string) ([]string, error) {
 	fullURL := *p.permissionsURL
-	fullURL = *fullURL.JoinPath(publicGroup, "app")
+	fullURL = *fullURL.JoinPath("permissions", "abbreviated", "subjects", "group", publicGroup, "app")
 	resp, err := http.Get(fullURL.String())
 	if err != nil {
 		return nil, err

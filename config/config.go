@@ -28,7 +28,7 @@ type DatabaseConfiguration struct {
 }
 
 func NewDatabaseConfiguration(config *koanf.Koanf) (*DatabaseConfiguration, error) {
-	var dbConfig *DatabaseConfiguration
+	var dbConfig DatabaseConfiguration
 
 	dbConfig.User = config.String("db.user")
 	if dbConfig.User == "" {
@@ -51,7 +51,7 @@ func NewDatabaseConfiguration(config *koanf.Koanf) (*DatabaseConfiguration, erro
 		return nil, errors.New("db.database must be set in the configuration")
 	}
 
-	return dbConfig, nil
+	return &dbConfig, nil
 }
 
 type LoggingConfiguration struct {
@@ -187,14 +187,15 @@ type PermissionsConfiguration struct {
 }
 
 func NewPermissionsConfiguration(config *koanf.Koanf) (*PermissionsConfiguration, error) {
-	u := config.String("permissions.url")
+	u := config.String("permissions.uri")
 	if u == "" {
-		return nil, errors.New("permissions.url must be set in the configuration")
+		return nil, errors.New("permissions.uri must be set in the configuration")
 	}
 	g := config.String("permissions.public_group")
 	if g == "" {
 		return nil, errors.New("permissions.public_group must be set in the configuration")
 	}
+	log.Debug(g)
 	return &PermissionsConfiguration{
 		URL:         u,
 		PublicGroup: g,

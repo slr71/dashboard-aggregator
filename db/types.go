@@ -1,17 +1,19 @@
 package db
 
-import "time"
+import (
+	"database/sql"
+)
 
 type App struct {
-	ID              string    `db:"id"`
-	SystemID        string    `db:"system_id"`
-	Name            string    `db:"name"`
-	Description     string    `db:"description"`
-	WikiURL         string    `db:"wiki_url"`
-	IntegrationDate time.Time `db:"integration_date"`
-	EditedDate      time.Time `db:"edited_date"`
-	Username        string    `db:"username"`
-	JobCount        int       `db:"job_count"`
-	IsFavorite      bool      `db:"is_favorite"`
-	IsPublic        bool      `db:"is_public"`
+	ID              string         `db:"id"`
+	SystemID        string         `db:"system_id"`
+	Name            string         `db:"name"`
+	Description     sql.NullString `db:"description"`
+	WikiURL         sql.NullString `db:"wiki_url"`
+	IntegrationDate sql.NullTime   `db:"integration_date"`
+	EditedDate      sql.NullTime   `db:"edited_date"`
+	Username        sql.NullString `db:"username"`
+	JobCount        int            `db:"job_count"`
+	IsFavorite      bool           `db:"is_favorite"`
+	IsPublic        bool           `db:"is_public"`
 }

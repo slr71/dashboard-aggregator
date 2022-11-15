@@ -3,7 +3,6 @@ package apis
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,10 +19,14 @@ func NewMetadataAPI(metadataURL *url.URL) *MetadataAPI {
 	}
 }
 
-func (m *MetadataAPI) GetFilteredTargetIDs(username string, targetTypes []string, avus map[string]string, targetIDs []string) ([]string, error) {
+type TargetIDs struct {
+	TargetIDs []string `json:"target-ids"`
+}
+
+func (m *MetadataAPI) GetFilteredTargetIDs(username string, targetTypes []string, avus []map[string]string, targetIDs []string) ([]string, error) {
 	u := fixUsername(username)
 
-	fullURL := *m.metadataURL
+	fullURL := *m.metadataURL.JoinPath("avus", "filter-targets")
 	q := fullURL.Query()
 	q.Set("user", u)
 	fullURL.RawQuery = q.Encode()
@@ -44,26 +47,22 @@ func (m *MetadataAPI) GetFilteredTargetIDs(username string, targetTypes []string
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code from %s was %d", fullURL.String(), resp.StatusCode)
-	}
-
 	rb, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var data map[string]interface{}
+	if resp.StatusCode != http.StatusOK {
+		msg := string(rb)
+		return nil, fmt.Errorf("url %s; status code %d; msg %s", fullURL.String(), resp.StatusCode, msg)
+	}
+
+	var data TargetIDs
 
 	if err = json.Unmarshal(rb, &data); err != nil {
 		return nil, err
 	}
 
-	_, ok := data["target-ids"]
-	if !ok {
-		return nil, errors.New("body missing target-ids field")
-	}
-
-	retval := data["target-ids"].([]string)
+	retval := data.TargetIDs
 	return retval, nil
 }

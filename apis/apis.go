@@ -42,7 +42,7 @@ func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisList
 	u := fixUsername(username)
 	log = log.WithField("user", u)
 
-	fullURL := *a.appsURL
+	fullURL := *a.appsURL.JoinPath("analyses")
 
 	filter := []map[string]string{
 		{
@@ -62,15 +62,11 @@ func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisList
 	q.Set("filter", string(filterStr))
 	fullURL.RawQuery = q.Encode()
 
-	log.Infof("getting running analyses", u)
-
 	resp, err := http.Get(fullURL.String())
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	log.Infof("done getting running analyses", u)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status code from %s was %d", fullURL.String(), resp.StatusCode)
@@ -95,7 +91,7 @@ func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (*AnalysisListi
 	u := fixUsername(username)
 	log = log.WithField("user", u)
 
-	fullURL := a.appsURL
+	fullURL := a.appsURL.JoinPath("analyses")
 
 	q := fullURL.Query()
 	q.Set("limit", strconv.FormatInt(int64(limit), 10))
@@ -104,23 +100,20 @@ func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (*AnalysisListi
 	q.Set("sort-dir", "DESC")
 	fullURL.RawQuery = q.Encode()
 
-	log.Infof("getting recent analyses", u)
-
 	resp, err := http.Get(fullURL.String())
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	log.Infof("done getting recent analyses", u)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code from %s was %d", fullURL.String(), resp.StatusCode)
-	}
-
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		msg := string(b)
+		return nil, fmt.Errorf("url %s; status code %d; msg: %s", fullURL.String(), resp.StatusCode, msg)
 	}
 
 	var data AnalysisListing

@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/lib/pq"
 )
 
 type AppsQueryConfig struct {
@@ -41,7 +43,7 @@ func (d *Database) PopularFeaturedApps(ctx context.Context, cfg *AppsQueryConfig
 	subquery := db.From(usersT).
 		Join(workspaceT, goqu.On(usersT.Col("id").Eq(workspaceT.Col("user_id")))).
 		Join(appCatGroupT, goqu.On(workspaceT.Col("root_category_id").Eq(appCatGroupT.Col("parent_category_id")))).
-		Join(appCatAppT, goqu.On(appCatGroupT.Col("child_category_id").Eq(appCatAppT.Col("category_id")))).
+		Join(appCatAppT, goqu.On(appCatGroupT.Col("child_category_id").Eq(appCatAppT.Col("app_category_id")))).
 		Where(
 			usersT.Col("username").Eq(cfg.Username),
 			appCatGroupT.Col("child_index").Eq(cfg.GroupsIndex),
@@ -64,12 +66,12 @@ func (d *Database) PopularFeaturedApps(ctx context.Context, cfg *AppsQueryConfig
 		).
 		Join(jobsT, goqu.On(jobsT.Col("app_id").Eq(goqu.Cast(appListingT.Col("id"), "TEXT")))).
 		Where(
-			appListingT.Col("id").Eq(goqu.Any(cfg.AppIDs)),
+			appListingT.Col("id").Eq(goqu.Any(pq.Array(cfg.AppIDs))),
 			appListingT.Col("deleted").Eq(goqu.L("false")),
 			appListingT.Col("disabled").Eq(goqu.L("false")),
 			appListingT.Col("integration_date").IsNotNull(),
 			goqu.Or(
-				jobsT.Col("start_date").Gte(goqu.L("now() - ?", goqu.Cast(goqu.L(cfg.StartDateInterval), "interval"))),
+				jobsT.Col("start_date").Gte(goqu.L("now() - ?", goqu.Cast(goqu.L(fmt.Sprintf("'%s'", cfg.StartDateInterval)), "interval"))),
 				jobsT.Col("start_date").IsNull(),
 			),
 		).
@@ -151,7 +153,7 @@ func (d *Database) PublicAppsQuery(ctx context.Context, username string, groupIn
 			goqu.L("true").As(goqu.C("is_public")),
 		).
 		Where(
-			a.Col("id").Eq(goqu.Any(publicAppIDs)),
+			a.Col("id").Eq(goqu.Any(pq.Array(publicAppIDs))),
 			a.Col("deleted").Eq(goqu.L("false")),
 			a.Col("disabled").Eq(goqu.L("false")),
 			a.Col("integration_date").IsNotNull(),
@@ -222,7 +224,7 @@ func (d *Database) RecentlyAddedApps(ctx context.Context, username string, group
 			a.Col("edited_date"),
 			a.Col("integrator_username").As(goqu.C("username")),
 			goqu.L("EXISTS(?)", subquery).As(goqu.C("is_favorite")),
-			a.Col("id").Eq(goqu.Any(publicAppIDS)).As(goqu.C("is_public")),
+			a.Col("id").Eq(goqu.Any(pq.Array(publicAppIDS))).As(goqu.C("is_public")),
 		).
 		Where(
 			a.Col("deleted").Eq(goqu.L("false")),
@@ -296,7 +298,7 @@ func (d *Database) RecentlyUsedApps(ctx context.Context, cfg *AppsQueryConfig, o
 			a.Col("edited_date"),
 			a.Col("integrator_username").As(goqu.C("username")),
 			goqu.L("EXISTS(?)", subquery),
-			a.Col("id").Eq(goqu.Any(cfg.AppIDs)).As(goqu.C("is_public")),
+			a.Col("id").Eq(goqu.Any(pq.Array(cfg.AppIDs))).As(goqu.C("is_public")),
 			goqu.MAX(j.Col("start_date")).As(goqu.C("most_recent_start_date")),
 		).
 		Join(u, goqu.On(j.Col("user_id").Eq(u.Col("id")))).
@@ -305,7 +307,7 @@ func (d *Database) RecentlyUsedApps(ctx context.Context, cfg *AppsQueryConfig, o
 			u.Col("username").Eq(cfg.Username),
 			a.Col("deleted").IsFalse(),
 			a.Col("disabled").IsFalse(),
-			j.Col("start_date").Gt(goqu.L("now() - ?", goqu.Cast(goqu.L(cfg.StartDateInterval), "INTERVAL"))),
+			j.Col("start_date").Gt(goqu.L("now() - ?", goqu.Cast(goqu.L(fmt.Sprintf("'%s'", cfg.StartDateInterval)), "INTERVAL"))),
 		).
 		GroupBy(
 			a.Col("id"),

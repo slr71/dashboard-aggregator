@@ -8,6 +8,7 @@ require (
 	github.com/cyverse-de/go-mod/logging v0.0.2
 	github.com/cyverse-de/go-mod/otelutils v0.0.3
 	github.com/doug-martin/goqu/v9 v9.18.0
+	github.com/guregu/null v4.0.0+incompatible
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/knadh/koanf v1.4.1
 	github.com/labstack/echo/v4 v4.9.1

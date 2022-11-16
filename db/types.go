@@ -1,19 +1,19 @@
 package db
 
 import (
-	"database/sql"
+	"github.com/guregu/null"
 )
 
 type App struct {
-	ID              string         `db:"id"`
-	SystemID        string         `db:"system_id"`
-	Name            string         `db:"name"`
-	Description     sql.NullString `db:"description"`
-	WikiURL         sql.NullString `db:"wiki_url"`
-	IntegrationDate sql.NullTime   `db:"integration_date"`
-	EditedDate      sql.NullTime   `db:"edited_date"`
-	Username        sql.NullString `db:"username"`
-	JobCount        int            `db:"job_count"`
-	IsFavorite      bool           `db:"is_favorite"`
-	IsPublic        bool           `db:"is_public"`
+	ID              string      `db:"id" json:"id"`
+	SystemID        string      `db:"system_id" json:"system_id"`
+	Name            string      `db:"name" json:"name"`
+	Description     null.String `db:"description" json:"description"`
+	WikiURL         null.String `db:"wiki_url" json:"wiki_url"`
+	IntegrationDate null.Time   `db:"integration_date" json:"integration_date"`
+	EditedDate      null.Time   `db:"edited_date" json:"edited_date"`
+	Username        null.String `db:"username" json:"username"`
+	JobCount        int         `db:"job_count" json:"job_count"`
+	IsFavorite      bool        `db:"is_favorite" json:"is_favorite"`
+	IsPublic        bool        `db:"is_public" json:"is_public"`
 }

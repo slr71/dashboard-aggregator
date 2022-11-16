@@ -3,6 +3,8 @@ package feeds
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/cyverse-de/go-mod/logging"
 	"github.com/mmcdole/gofeed"
@@ -125,18 +127,23 @@ func TransformFeedItems(f DashboardFeeder, feed *gofeed.Feed) []DashboardItem {
 	log.Infof("transforming feed items from %s", f.FeedURL())
 
 	items := lo.Map(feed.Items, func(in *gofeed.Item, index int) DashboardItem {
-		descLength := 281
-		if len(in.Content) <= descLength {
-			descLength = len(in.Content)
-		}
+		// log.Debugf("content %s", in.Content)
+		// log.Debugf("description %s", in.Description)
+
+		// descLength := 281
+		// if len(in.Content) <= descLength {
+		// 	descLength = len(in.Content)
+		// }
+
+		description := fmt.Sprintf("%s\n%s\n%s", in.Title, in.Author.Name, in.PublishedParsed.Format(time.RFC1123))
 		dbi := DashboardItem{
 			ID:              in.GUID,
 			Name:            in.Title,
-			Description:     in.Content[0:descLength],
-			DateAdded:       in.Published,
+			Description:     description,
+			DateAdded:       in.PublishedParsed.Format(time.RFC3339),
 			Author:          in.Author.Name,
 			PublicationDate: in.Published,
-			Content:         in.Content,
+			Content:         in.Description,
 			Link:            in.Link,
 		}
 		return dbi

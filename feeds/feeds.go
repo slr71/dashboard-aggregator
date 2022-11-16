@@ -33,7 +33,7 @@ type DashboardFeeder interface {
 
 	ScheduleRefresh(ctx context.Context) *cron.Cron
 	PullItems(ctx context.Context)
-	TransformFeedItems(ctx context.Context, feed *gofeed.Feed)
+	TransformFeedItems(ctx context.Context, feed *gofeed.Feed) []DashboardItem
 }
 
 const InstantLaunchesFeedName = "instant-launches"
@@ -107,6 +107,8 @@ func ScheduleRefresh(ctx context.Context, f DashboardFeeder) *cron.Cron {
 
 	j := cron.New()
 
+	log.Infof("scheduling a refresh of items from %s", f.FeedURL())
+
 	j.AddFunc("0 * * * *", func() {
 		log.Infof("starting refresh of %s", f.FeedURL())
 		PullItems(ctx, f)
@@ -114,11 +116,15 @@ func ScheduleRefresh(ctx context.Context, f DashboardFeeder) *cron.Cron {
 
 	j.Start()
 
+	log.Debugf("done scheduling a refresh of items from %s", f.FeedURL())
+
 	return j
 }
 
-func TransformFeedItems(f DashboardFeeder, feed *gofeed.Feed) {
-	f.SetItems(lo.Map(feed.Items, func(in *gofeed.Item, index int) DashboardItem {
+func TransformFeedItems(f DashboardFeeder, feed *gofeed.Feed) []DashboardItem {
+	log.Infof("transforming feed items from %s", f.FeedURL())
+
+	items := lo.Map(feed.Items, func(in *gofeed.Item, index int) DashboardItem {
 		descLength := 281
 		if len(in.Content) <= descLength {
 			descLength = len(in.Content)
@@ -134,7 +140,11 @@ func TransformFeedItems(f DashboardFeeder, feed *gofeed.Feed) {
 			Link:            in.Link,
 		}
 		return dbi
-	}))
+	})
+
+	log.Debugf("done transforming feed items from %s", f.FeedURL())
+
+	return items
 }
 
 func PrintItems(f DashboardFeeder) {
@@ -155,6 +165,8 @@ func PrintItems(f DashboardFeeder) {
 func PullItems(ctx context.Context, f DashboardFeeder) {
 	log := log.WithField("context", "pulling items")
 
+	log.Infof("pulling feed items from %s", f.FeedURL())
+
 	p := gofeed.NewParser()
 
 	feed, err := p.ParseURLWithContext(f.FeedURL(), ctx)
@@ -169,5 +181,6 @@ func PullItems(ctx context.Context, f DashboardFeeder) {
 		feed.Items = feed.Items[0 : f.Limit()+1]
 	}
 
-	f.TransformFeedItems(ctx, feed)
+	items := f.TransformFeedItems(ctx, feed)
+	f.SetItems(items)
 }

@@ -2,6 +2,7 @@ package feeds
 
 import (
 	"context"
+	"sync"
 
 	"github.com/mmcdole/gofeed"
 	"github.com/robfig/cron/v3"
@@ -12,6 +13,7 @@ type VideoFeed struct {
 	feedURL string
 	limit   int
 	items   []DashboardItem
+	mu      sync.RWMutex
 }
 
 func NewVideoFeed(feedURL string, limit int) *VideoFeed {
@@ -22,22 +24,30 @@ func NewVideoFeed(feedURL string, limit int) *VideoFeed {
 	}
 }
 
-func (v *VideoFeed) Items() []DashboardItem         { return v.items }
-func (v *VideoFeed) SetItems(items []DashboardItem) { v.items = items }
-func (v *VideoFeed) Limit() int                     { return v.limit }
-func (v *VideoFeed) FeedURL() string                { return v.feedURL }
-func (v *VideoFeed) PrintItems()                    { PrintItems(v) }
-func (v *VideoFeed) PullItems(ctx context.Context)  { PullItems(ctx, v) }
+func (v *VideoFeed) Items() []DashboardItem {
+	v.mu.RLock()
+	items := v.items
+	v.mu.RUnlock()
+	return items
+}
+func (v *VideoFeed) SetItems(items []DashboardItem) {
+	v.mu.Lock()
+	v.items = items
+	v.mu.Unlock()
+}
+func (v *VideoFeed) Limit() int                    { return v.limit }
+func (v *VideoFeed) FeedURL() string               { return v.feedURL }
+func (v *VideoFeed) PrintItems()                   { PrintItems(v) }
+func (v *VideoFeed) PullItems(ctx context.Context) { PullItems(ctx, v) }
 
 func (v *VideoFeed) ScheduleRefresh(ctx context.Context) *cron.Cron {
 	return ScheduleRefresh(ctx, v)
 }
 
-func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) {
-
+func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) []DashboardItem {
 	log.Infof("transforming video feed items from %s", v.feedURL)
 
-	v.SetItems(lo.Map(feed.Items, func(in *gofeed.Item, index int) DashboardItem {
+	items := lo.Map(feed.Items, func(in *gofeed.Item, index int) DashboardItem {
 		var (
 			description  string
 			thumbnailURL string
@@ -77,7 +87,9 @@ func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) {
 		}
 
 		return dbi
-	}))
+	})
 
 	log.Debugf("done transforming video feed items from %s", v.feedURL)
+
+	return items
 }

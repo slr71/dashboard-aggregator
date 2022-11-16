@@ -98,6 +98,7 @@ func (d *Database) PopularFeaturedApps(ctx context.Context, cfg *AppsQueryConfig
 
 	executor := query.Executor()
 
+	apps = make([]App, 0)
 	if err = executor.ScanStructsContext(ctx, &apps); err != nil {
 		return nil, err
 	}
@@ -172,6 +173,7 @@ func (d *Database) PublicAppsQuery(ctx context.Context, username string, groupIn
 
 	executor := query.Executor()
 
+	apps = make([]App, 0)
 	if err = executor.ScanStructsContext(ctx, &apps); err != nil {
 		return nil, err
 	}
@@ -245,6 +247,7 @@ func (d *Database) RecentlyAddedApps(ctx context.Context, username string, group
 
 	executor := query.Executor()
 
+	apps = make([]App, 0)
 	if err = executor.ScanStructsContext(ctx, &apps); err != nil {
 		return nil, err
 	}
@@ -332,6 +335,7 @@ func (d *Database) RecentlyUsedApps(ctx context.Context, cfg *AppsQueryConfig, o
 
 	executor := query.Executor()
 
+	apps = make([]App, 0)
 	if err = executor.ScanStructsContext(ctx, &apps); err != nil {
 		return nil, err
 	}

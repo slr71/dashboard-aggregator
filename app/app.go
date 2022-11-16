@@ -163,14 +163,14 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	log.Debug("done getting public app ids")
 
 	log.Debug("getting recently added apps")
-	recentlyAddedApps, err := a.db.RecentlyAddedApps(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs)
+	recentlyAddedApps, err := a.db.RecentlyAddedApps(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
 	if err != nil {
 		return err
 	}
 	log.Debug("done getting recently added apps")
 
 	log.Debug("getting public apps")
-	publicApps, err := a.db.PublicAppsQuery(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs)
+	publicApps, err := a.db.PublicAppsQuery(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
 		AppIDs:            publicAppIDs,
 		StartDateInterval: startDateInterval,
-	})
+	}, db.WithQueryLimit(uint(limit)))
 	if err != nil {
 		return err
 	}
@@ -210,7 +210,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
 		AppIDs:            featuredAppIDs,
 		StartDateInterval: startDateInterval,
-	})
+	}, db.WithQueryLimit(uint(limit)))
 	if err != nil {
 		return err
 	}

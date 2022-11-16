@@ -35,7 +35,7 @@ func (v *VideoFeed) ScheduleRefresh(ctx context.Context) *cron.Cron {
 
 func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) {
 
-	log.Info("transforming video feed items")
+	log.Infof("transforming video feed items from %s", v.feedURL)
 
 	v.SetItems(lo.Map(feed.Items, func(in *gofeed.Item, index int) DashboardItem {
 		var (
@@ -79,5 +79,5 @@ func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) {
 		return dbi
 	}))
 
-	log.Debug("done transforming video feed items")
+	log.Debugf("done transforming video feed items from %s", v.feedURL)
 }

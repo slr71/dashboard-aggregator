@@ -75,7 +75,7 @@ func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) {
 			Link:            in.Link,
 			ThumbnailURL:    thumbnailURL,
 		}
-		log.Debugf("%+v", in)
+
 		return dbi
 	}))
 

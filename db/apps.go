@@ -33,56 +33,56 @@ func (d *Database) PopularFeaturedApps(ctx context.Context, cfg *AppsQueryConfig
 		db = d.goquDB
 	}
 
-	appListingT := goqu.T("app_listing")
-	jobsT := goqu.T("jobs")
-	usersT := goqu.T("users")
-	workspaceT := goqu.T("workspace")
-	appCatGroupT := goqu.T("app_category_group")
-	appCatAppT := goqu.T("app_category_app")
+	a := goqu.T("app_listing")
+	j := goqu.T("jobs")
+	u := goqu.T("users")
+	w := goqu.T("workspace")
+	acg := goqu.T("app_category_group")
+	aca := goqu.T("app_category_app")
 
-	subquery := db.From(usersT).
-		Join(workspaceT, goqu.On(usersT.Col("id").Eq(workspaceT.Col("user_id")))).
-		Join(appCatGroupT, goqu.On(workspaceT.Col("root_category_id").Eq(appCatGroupT.Col("parent_category_id")))).
-		Join(appCatAppT, goqu.On(appCatGroupT.Col("child_category_id").Eq(appCatAppT.Col("app_category_id")))).
+	subquery := db.From(u).
+		Join(w, goqu.On(u.Col("id").Eq(w.Col("user_id")))).
+		Join(acg, goqu.On(w.Col("root_category_id").Eq(acg.Col("parent_category_id")))).
+		Join(aca, goqu.On(acg.Col("child_category_id").Eq(aca.Col("app_category_id")))).
 		Where(
-			usersT.Col("username").Eq(cfg.Username),
-			appCatGroupT.Col("child_index").Eq(cfg.GroupsIndex),
-			appCatAppT.Col("app_id").Eq(appListingT.Col("id")),
+			u.Col("username").Eq(cfg.Username),
+			acg.Col("child_index").Eq(cfg.GroupsIndex),
+			aca.Col("app_id").Eq(a.Col("id")),
 		)
 
-	query := db.From(appListingT).
+	query := db.From(a).
 		Select(
-			appListingT.Col("id"),
+			a.Col("id"),
 			goqu.L(`'de'`).As("system_id"),
-			appListingT.Col("name"),
-			appListingT.Col("description"),
-			appListingT.Col("wiki_url"),
-			appListingT.Col("integration_date"),
-			appListingT.Col("edited_date"),
-			appListingT.Col("integrator_username").As(goqu.C("username")),
-			goqu.COUNT(jobsT.Col("id")).As(goqu.C("job_count")),
+			a.Col("name"),
+			a.Col("description"),
+			a.Col("wiki_url"),
+			a.Col("integration_date"),
+			a.Col("edited_date"),
+			a.Col("integrator_username").As(goqu.C("username")),
+			goqu.COUNT(j.Col("id")).As(goqu.C("job_count")),
 			goqu.L("EXISTS(?)", subquery).As(goqu.C("is_favorite")),
 			goqu.L("true").As(goqu.C("is_public")),
 		).
-		Join(jobsT, goqu.On(jobsT.Col("app_id").Eq(goqu.Cast(appListingT.Col("id"), "TEXT")))).
+		LeftJoin(j, goqu.On(j.Col("app_id").Eq(goqu.Cast(a.Col("id"), "TEXT")))).
 		Where(
-			appListingT.Col("id").Eq(goqu.Any(pq.Array(cfg.AppIDs))),
-			appListingT.Col("deleted").Eq(goqu.L("false")),
-			appListingT.Col("disabled").Eq(goqu.L("false")),
-			appListingT.Col("integration_date").IsNotNull(),
+			a.Col("id").Eq(goqu.Any(pq.Array(cfg.AppIDs))),
+			a.Col("deleted").Eq(goqu.L("false")),
+			a.Col("disabled").Eq(goqu.L("false")),
+			a.Col("integration_date").IsNotNull(),
 			goqu.Or(
-				jobsT.Col("start_date").Gte(goqu.L("now() - ?", goqu.Cast(goqu.L(fmt.Sprintf("'%s'", cfg.StartDateInterval)), "interval"))),
-				jobsT.Col("start_date").IsNull(),
+				j.Col("start_date").Gte(goqu.L("now() - ?", goqu.Cast(goqu.L(fmt.Sprintf("'%s'", cfg.StartDateInterval)), "interval"))),
+				j.Col("start_date").IsNull(),
 			),
 		).
 		GroupBy(
-			appListingT.Col("id"),
-			appListingT.Col("name"),
-			appListingT.Col("description"),
-			appListingT.Col("wiki_url"),
-			appListingT.Col("integration_date"),
-			appListingT.Col("edited_date"),
-			appListingT.Col("integrator_username"),
+			a.Col("id"),
+			a.Col("name"),
+			a.Col("description"),
+			a.Col("wiki_url"),
+			a.Col("integration_date"),
+			a.Col("edited_date"),
+			a.Col("integrator_username"),
 		).
 		Order(
 			goqu.C("job_count").Desc(),
@@ -102,6 +102,9 @@ func (d *Database) PopularFeaturedApps(ctx context.Context, cfg *AppsQueryConfig
 	if err = executor.ScanStructsContext(ctx, &apps); err != nil {
 		return nil, err
 	}
+
+	sql, _, _ := query.ToSQL()
+	log.Debugf("%s", sql)
 
 	return apps, err
 }

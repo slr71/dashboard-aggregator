@@ -137,8 +137,6 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	}
 	log.Debug("done getting instant launch items")
 
-	publicFeeds := a.pf
-
 	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
 
 	log.Debug("getting recent analyses")
@@ -217,6 +215,8 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 		return err
 	}
 	log.Debug("done getting featured apps")
+
+	publicFeeds := a.pf
 
 	retval := map[string]interface{}{
 		"analyses": map[string]interface{}{

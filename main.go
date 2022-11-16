@@ -88,6 +88,7 @@ func main() {
 	pf.AddFeed(ctx, "news", feeds.NewWebsiteFeed(config.Feeds.NewsFeedURL, *itemLimit))
 	pf.AddFeed(ctx, "events", feeds.NewWebsiteFeed(config.Feeds.EventsFeedURL, *itemLimit))
 	pf.AddFeed(ctx, "videos", feeds.NewVideoFeed(config.Feeds.VideosURL, *itemLimit))
+	pf.PullItems(ctx)
 	pf.ScheduleRefreshes(ctx)
 
 	database := db.New(dbconn)

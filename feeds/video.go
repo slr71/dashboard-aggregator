@@ -57,6 +57,7 @@ func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) [
 			if groups, ok := media["group"]; ok {
 				if len(groups) > 0 {
 					group := groups[0]
+
 					if descs, ok := group.Children["description"]; ok {
 						if len(descs) > 0 {
 							desc := descs[0]
@@ -67,7 +68,7 @@ func (v *VideoFeed) TransformFeedItems(ctx context.Context, feed *gofeed.Feed) [
 					if thumbs, ok := group.Children["thumbnail"]; ok {
 						if len(thumbs) > 0 {
 							thumb := thumbs[0]
-							thumbnailURL = thumb.Value
+							thumbnailURL = thumb.Attrs["url"]
 						}
 					}
 				}

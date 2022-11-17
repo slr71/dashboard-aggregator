@@ -95,7 +95,7 @@ func (a *App) Echo() *echo.Echo {
 	a.ec.HTTPErrorHandler = httperror.HTTPErrorHandler
 
 	a.ec.GET("/", a.LoggedOutHandler)
-	a.ec.GET("/hello", a.HelloHandler)
+	a.ec.GET("/healthz", a.HealthzHandler)
 	a.ec.GET("/feeds", a.PublicFeedsHandler)
 
 	users := a.ec.Group("/users")
@@ -114,8 +114,12 @@ func (a *App) Echo() *echo.Echo {
 	return a.ec
 }
 
-func (a *App) HelloHandler(ctx echo.Context) error {
-	return ctx.String(http.StatusOK, "Hello from dashboard-aggregator")
+func (a *App) HealthzHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	if err := a.db.Healthz(ctx); err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusOK)
 }
 
 func (a *App) PublicFeedsHandler(c echo.Context) error {

@@ -45,7 +45,7 @@ func main() {
 		envPrefix  = flag.String("env-prefix", cfg.DefaultEnvPrefix, "The prefix for environment variables")
 		itemLimit  = flag.Int("item-limit", 10, "The default limit on the number of items returned for a dashboard section")
 		logLevel   = flag.String("log-level", "debug", "One of trace, debug, info, warn, error, fatal, or panic")
-		listenPort = flag.Int("port", 60000, "The port the service listens on for requests")
+		listenPort = flag.Int("port", 3000, "The port the service listens on for requests")
 	)
 
 	flag.Parse()

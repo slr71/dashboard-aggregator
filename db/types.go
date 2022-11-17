@@ -13,7 +13,7 @@ type App struct {
 	IntegrationDate null.Time   `db:"integration_date" json:"integration_date"`
 	EditedDate      null.Time   `db:"edited_date" json:"edited_date"`
 	Username        null.String `db:"username" json:"username"`
-	JobCount        int         `db:"job_count" json:"job_count"`
+	JobCount        null.String `db:"job_count" json:"job_count"`
 	IsFavorite      bool        `db:"is_favorite" json:"is_favorite"`
 	IsPublic        bool        `db:"is_public" json:"is_public"`
 }

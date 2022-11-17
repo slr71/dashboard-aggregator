@@ -103,7 +103,6 @@ func Connect(config *config.DatabaseConfiguration) (*sqlx.DB, error) {
 	)
 	dbconn := otelsqlx.MustConnect("postgres", dbURI,
 		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
-	log.Info("done connecting to the database")
 	dbconn.SetMaxOpenConns(10)
 	dbconn.SetConnMaxIdleTime(time.Minute)
 	return dbconn, nil

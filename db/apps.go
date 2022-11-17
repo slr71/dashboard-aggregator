@@ -103,9 +103,6 @@ func (d *Database) PopularFeaturedApps(ctx context.Context, cfg *AppsQueryConfig
 		return nil, err
 	}
 
-	sql, _, _ := query.ToSQL()
-	log.Debugf("%s", sql)
-
 	return apps, err
 }
 

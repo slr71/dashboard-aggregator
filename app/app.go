@@ -16,6 +16,9 @@ import (
 
 var log = logging.Log.WithField("package", "app")
 
+const DefaultStartDateInterval = "1 year"
+const DefaultLimit = int64(10)
+
 func normalizeLimit(c echo.Context) (int, error) {
 	var (
 		limit int64
@@ -91,11 +94,17 @@ func New(db *db.Database, pf *feeds.PublicFeeds, cfg *config.ServiceConfiguratio
 func (a *App) Echo() *echo.Echo {
 	a.ec.HTTPErrorHandler = httperror.HTTPErrorHandler
 
-	a.ec.GET("/", a.HelloHandler)
+	a.ec.GET("/", a.LoggedOutHandler)
+	a.ec.GET("/hello", a.HelloHandler)
 	a.ec.GET("/feeds", a.PublicFeedsHandler)
 
 	users := a.ec.Group("/users")
 	users.GET("/:username", a.UserDashboardHandler)
+
+	apps := a.ec.Group("/apps")
+	apps.GET("/public", a.PublicAppsHandler)
+	apps.GET("/recently-ran", a.RecentlyRunAppsHandler)
+
 	return a.ec
 }
 
@@ -109,84 +118,8 @@ func (a *App) PublicFeedsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, &result)
 }
 
-func (a *App) UserDashboardHandler(c echo.Context) error {
-	var err error
-
-	ctx := c.Request().Context()
-
-	username, err := normalizeUsername(c)
-	if err != nil {
-		return err
-	}
-
-	startDateInterval := normalizeStartDateInterval(c)
-
-	limit, err := normalizeLimit(c)
-	if err != nil {
-		return err
-	}
-
-	log.Debug("getting instant launch items")
-	ilAPI, err := apis.NewInstantLaunchesAPI(a.config)
-	if err != nil {
-		return err
-	}
-	ilItems, err := ilAPI.PullItems(ctx)
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting instant launch items")
-
-	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
-
-	log.Debug("getting recent analyses")
-	recentAnalyses, err := analysisAPI.RecentAnalyses(username, int(limit))
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting recent analyses")
-
-	log.Debug("getting running analyses")
-	runningAnalyses, err := analysisAPI.RunningAnalyses(username, int(limit))
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting running analyses")
-
-	permissionsAPI := apis.NewPermissionsAPI(a.permissionsURL)
-
-	log.Debug("getting public app ids")
-	publicAppIDs, err := permissionsAPI.GetPublicIDS(a.config.Permissions.PublicGroup)
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting public app ids")
-
-	log.Debug("getting recently added apps")
-	recentlyAddedApps, err := a.db.RecentlyAddedApps(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting recently added apps")
-
-	log.Debug("getting public apps")
-	publicApps, err := a.db.PublicAppsQuery(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting public apps")
-
-	log.Debug("getting recently used apps")
-	recentlyUsed, err := a.db.RecentlyUsedApps(ctx, &db.AppsQueryConfig{
-		Username:          username,
-		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
-		AppIDs:            publicAppIDs,
-		StartDateInterval: startDateInterval,
-	}, db.WithQueryLimit(uint(limit)))
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting recently used apps")
+func (a *App) featuredAppIDs(username string, publicAppIDs []string) ([]string, error) {
+	log := log.WithField("context", "featured app ids lookup")
 
 	metadataAPI := apis.NewMetadataAPI(a.metadataURL)
 
@@ -200,42 +133,24 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	log.Debug("getting featured app ids")
 	featuredAppIDs, err := metadataAPI.GetFilteredTargetIDs(username, []string{"app"}, featuredAppsAVUs, publicAppIDs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Debug("done getting featured app ids")
 
-	log.Debug("getting featured apps")
-	featuredApps, err := a.db.PopularFeaturedApps(ctx, &db.AppsQueryConfig{
-		Username:          username,
-		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
-		AppIDs:            featuredAppIDs,
-		StartDateInterval: startDateInterval,
-	}, db.WithQueryLimit(uint(limit)))
+	return featuredAppIDs, nil
+}
+
+func (a *App) publicAppIDs() ([]string, error) {
+	log := log.WithField("context", "public app ids lookup")
+
+	permissionsAPI := apis.NewPermissionsAPI(a.permissionsURL)
+
+	log.Debug("getting public app ids")
+	publicAppIDs, err := permissionsAPI.GetPublicIDS(a.config.Permissions.PublicGroup)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	log.Debug("done getting featured apps")
+	log.Debug("done getting public app ids")
 
-	publicFeeds := a.pf
-
-	retval := map[string]interface{}{
-		"analyses": map[string]interface{}{
-			"recent":  recentAnalyses.Analyses,
-			"running": runningAnalyses.Analyses,
-		},
-		"apps": map[string]interface{}{
-			"recentlyAdded":   recentlyAddedApps,
-			"public":          publicApps,
-			"recentlyUsed":    recentlyUsed,
-			"popularFeatured": featuredApps,
-		},
-		"instantLaunches": ilItems,
-		"feeds":           publicFeeds.Marshallable(ctx),
-	}
-
-	if err = c.JSON(http.StatusOK, retval); err != nil {
-		return err
-	}
-
-	return nil
+	return publicAppIDs, nil
 }

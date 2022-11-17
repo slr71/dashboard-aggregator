@@ -1,34 +1,125 @@
 package app
 
-const DefaultStartDateInterval = "1 year"
-const DefaultLimit = int64(10)
+import (
+	"net/http"
 
-// func (a *App) UserDashboardHandler(c echo.Context) error {
-// 	var err error
+	"github.com/cyverse-de/dashboard-aggregator/apis"
+	"github.com/cyverse-de/dashboard-aggregator/db"
+	"github.com/labstack/echo/v4"
+)
 
-// 	ctx := c.Request().Context()
+func (a *App) UserDashboardHandler(c echo.Context) error {
+	var err error
 
-// 	username := c.Param("username")
-// 	if username == "" {
-// 		return echo.NewHTTPError(http.StatusBadRequest, "missing username from request")
-// 	}
+	ctx := c.Request().Context()
 
-// 	startDateInterval := c.QueryParam("start-date-interval")
-// 	if startDateInterval == "" {
-// 		startDateInterval = DefaultStartDateInterval
-// 	}
-// 	if err = a.db.ValidateInterval(ctx, startDateInterval); err != nil {
-// 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-// 	}
+	username, err := normalizeUsername(c)
+	if err != nil {
+		return err
+	}
 
-// 	limit := DefaultLimit
-// 	limitStr := c.QueryParam("limit")
-// 	if limitStr != "" {
-// 		limit, err = strconv.ParseInt(limitStr, 10, 32)
-// 		if err != nil {
-// 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-// 		}
-// 	}
+	startDateInterval := normalizeStartDateInterval(c)
 
-// 	return nil
-// }
+	limit, err := normalizeLimit(c)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("getting instant launch items")
+	ilAPI, err := apis.NewInstantLaunchesAPI(a.config)
+	if err != nil {
+		return err
+	}
+	ilItems, err := ilAPI.PullItems(ctx)
+	if err != nil {
+		return err
+	}
+	log.Debug("done getting instant launch items")
+
+	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
+
+	log.Debug("getting recent analyses")
+	recentAnalyses, err := analysisAPI.RecentAnalyses(username, int(limit))
+	if err != nil {
+		return err
+	}
+	log.Debug("done getting recent analyses")
+
+	log.Debug("getting running analyses")
+	runningAnalyses, err := analysisAPI.RunningAnalyses(username, int(limit))
+	if err != nil {
+		return err
+	}
+	log.Debug("done getting running analyses")
+
+	publicAppIDs, err := a.publicAppIDs()
+	if err != nil {
+		return err
+	}
+
+	log.Debug("getting recently added apps")
+	recentlyAddedApps, err := a.db.RecentlyAddedApps(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
+	if err != nil {
+		return err
+	}
+	log.Debug("done getting recently added apps")
+
+	log.Debug("getting public apps")
+	publicApps, err := a.db.PublicAppsQuery(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
+	if err != nil {
+		return err
+	}
+	log.Debug("done getting public apps")
+
+	log.Debug("getting recently used apps")
+	recentlyUsed, err := a.db.RecentlyUsedApps(ctx, &db.AppsQueryConfig{
+		Username:          username,
+		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
+		AppIDs:            publicAppIDs,
+		StartDateInterval: startDateInterval,
+	}, db.WithQueryLimit(uint(limit)))
+	if err != nil {
+		return err
+	}
+	log.Debug("done getting recently used apps")
+
+	featuredAppIDs, err := a.featuredAppIDs(username, publicAppIDs)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("getting featured apps")
+	featuredApps, err := a.db.PopularFeaturedApps(ctx, &db.AppsQueryConfig{
+		Username:          username,
+		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
+		AppIDs:            featuredAppIDs,
+		StartDateInterval: startDateInterval,
+	}, db.WithQueryLimit(uint(limit)))
+	if err != nil {
+		return err
+	}
+	log.Debug("done getting featured apps")
+
+	publicFeeds := a.pf
+
+	retval := map[string]interface{}{
+		"analyses": map[string]interface{}{
+			"recent":  recentAnalyses.Analyses,
+			"running": runningAnalyses.Analyses,
+		},
+		"apps": map[string]interface{}{
+			"recentlyAdded":   recentlyAddedApps,
+			"public":          publicApps,
+			"recentlyUsed":    recentlyUsed,
+			"popularFeatured": featuredApps,
+		},
+		"instantLaunches": ilItems,
+		"feeds":           publicFeeds.Marshallable(ctx),
+	}
+
+	if err = c.JSON(http.StatusOK, retval); err != nil {
+		return err
+	}
+
+	return nil
+}

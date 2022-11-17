@@ -1,13 +1,16 @@
-FROM node:16-alpine
+FROM golang:1.19 as build-root
 
-COPY . /src
-WORKDIR /src
+WORKDIR /go/src/github.com/cyverse-de/dashboard-aggregator
+COPY . .
 
-RUN npm ci
-RUN npm run build
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
 
-EXPOSE 3000
+RUN go build --buildvcs=false .
+RUN go clean -cache -modcache
+RUN cp ./dashboard-aggregator /bin/dashboard-aggregator
 
-CMD ["npm", "start"]
+ENTRYPOINT ["dashboard-aggregator"]
 
-LABEL org.label-schema.vcs-url="https://github.com/cyverse-de/dashboard-aggregator"
+EXPOSE 60000

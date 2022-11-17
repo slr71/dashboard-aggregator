@@ -13,4 +13,4 @@ RUN cp ./dashboard-aggregator /bin/dashboard-aggregator
 
 ENTRYPOINT ["dashboard-aggregator"]
 
-EXPOSE 60000
+EXPOSE 3000

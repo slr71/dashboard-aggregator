@@ -12,24 +12,32 @@ func (a *App) PublicAppsHandler(c echo.Context) error {
 
 	limit, err := normalizeLimit(c)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	publicAppIDs, err := a.publicAppIDs()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	log.Debug("getting public apps")
 	publicApps, err := a.db.PublicAppsQuery(ctx, "", a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	log.Debug("done getting public apps")
 
-	return c.JSON(http.StatusOK, map[string][]db.App{
+	if err = c.JSON(http.StatusOK, map[string][]db.App{
 		"apps": publicApps,
-	})
+	}); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
 }
 
 func (a *App) RecentlyRunAppsHandler(c echo.Context) error {
@@ -37,6 +45,7 @@ func (a *App) RecentlyRunAppsHandler(c echo.Context) error {
 
 	limit, err := normalizeLimit(c)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -44,6 +53,7 @@ func (a *App) RecentlyRunAppsHandler(c echo.Context) error {
 
 	publicAppIDs, err := a.publicAppIDs()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -55,11 +65,17 @@ func (a *App) RecentlyRunAppsHandler(c echo.Context) error {
 		StartDateInterval: startDateInterval,
 	}, db.WithQueryLimit(uint(limit)))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	log.Debug("done getting recently used apps")
 
-	return c.JSON(http.StatusOK, map[string][]db.App{
+	if err = c.JSON(http.StatusOK, map[string][]db.App{
 		"apps": recentlyUsedApps,
-	})
+	}); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
 }

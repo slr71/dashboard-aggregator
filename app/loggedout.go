@@ -12,6 +12,7 @@ func (a *App) LoggedOutHandler(c echo.Context) error {
 
 	limit, err := normalizeLimit(c)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -23,11 +24,13 @@ func (a *App) LoggedOutHandler(c echo.Context) error {
 
 	publicAppIDs, err := a.publicAppIDs()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	featuredAppIDs, err := a.featuredAppIDs(username, publicAppIDs)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -38,13 +41,19 @@ func (a *App) LoggedOutHandler(c echo.Context) error {
 		StartDateInterval: startDateInterval,
 	}, db.WithQueryLimit(uint(limit)))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	if err = c.JSON(http.StatusOK, map[string]interface{}{
 		"apps": map[string][]db.App{
 			"popularFeatured": popularFeaturedApps,
 		},
 		"feeds": feeds,
-	})
+	}); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
 }

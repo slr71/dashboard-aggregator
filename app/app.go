@@ -100,6 +100,10 @@ func (a *App) Echo() *echo.Echo {
 
 	users := a.ec.Group("/users")
 	users.GET("/:username", a.UserDashboardHandler)
+	users.GET("/:username/apps/public", a.PublicAppsForUserHandler)
+	users.GET("/:username/apps/recently-added", a.RecentAddedAppsForUserHandler)
+	users.GET("/:username/apps/popular-featured", a.PopularFeaturedAppsForUserHandler)
+	users.GET("/:username/apps/recently-used", a.RecentlyUsedAppsForUser)
 
 	apps := a.ec.Group("/apps")
 	apps.GET("/public", a.PublicAppsHandler)

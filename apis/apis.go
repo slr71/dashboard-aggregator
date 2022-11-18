@@ -59,7 +59,6 @@ func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisList
 	q := fullURL.Query()
 	q.Set("limit", strconv.FormatInt(int64(limit), 10))
 	q.Set("user", u)
-	//q.Set("filter", string(filterStr))
 
 	fullURL.RawQuery = fmt.Sprintf("%s&filter=%s", q.Encode(), string(filterStr))
 

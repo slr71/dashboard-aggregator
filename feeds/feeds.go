@@ -23,7 +23,7 @@ type DashboardItem struct {
 	PublicationDate string `json:"publication_date"`
 	Content         string `json:"content"`
 	Link            string `json:"link"`
-	ThumbnailURL    string `json:"thumbnail_url"`
+	ThumbnailURL    string `json:"thumbnailUrl"`
 }
 
 type DashboardFeeder interface {

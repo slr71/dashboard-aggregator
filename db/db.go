@@ -11,9 +11,6 @@ import (
 	"github.com/cyverse-de/go-mod/logging"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jmoiron/sqlx"
-	"github.com/uptrace/opentelemetry-go-extra/otelsql"
-	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 var log = logging.Log.WithField("package", "db")
@@ -102,8 +99,7 @@ func Connect(config *config.DatabaseConfiguration) (*sqlx.DB, error) {
 		config.Port,
 		config.Name,
 	)
-	dbconn := otelsqlx.MustConnect("postgres", dbURI,
-		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
+	dbconn := sqlx.MustConnect("postgres", dbURI)
 	dbconn.SetMaxOpenConns(10)
 	dbconn.SetConnMaxIdleTime(time.Minute)
 	return dbconn, nil

@@ -51,7 +51,7 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
             - name: service-configs
-              mountPath: /etc/iplant/de/configs
+              mountPath: /etc/cyverse/de/configs
               readOnly: true
           ports:
             - name: listen-port

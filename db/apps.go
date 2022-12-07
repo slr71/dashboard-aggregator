@@ -302,6 +302,7 @@ func (d *Database) RecentlyUsedApps(ctx context.Context, cfg *AppsQueryConfig, o
 			a.Col("integrator_username").As(goqu.C("username")),
 			goqu.L("EXISTS(?)", subquery).As(goqu.C("is_favorite")),
 			a.Col("id").Eq(goqu.Any(pq.Array(cfg.AppIDs))).As(goqu.C("is_public")),
+			goqu.MAX(j.Col("start_date")).As(goqu.C("most_recent_start_date")),
 		).
 		Join(u, goqu.On(j.Col("user_id").Eq(u.Col("id")))).
 		Join(a, goqu.On(goqu.Cast(a.Col("id"), "TEXT").Eq(j.Col("app_id")))).

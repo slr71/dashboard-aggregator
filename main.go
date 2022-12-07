@@ -23,8 +23,6 @@ import (
 
 var log = logging.Log.WithField("package", "main")
 
-const serviceName = "dashboard-aggregator"
-
 type DBConfig struct {
 	User     string
 	Password string
@@ -83,7 +81,10 @@ func main() {
 	pf.AddFeed(ctx, "events", feeds.NewWebsiteFeed(config.Feeds.EventsFeedURL, *itemLimit))
 	pf.AddFeed(ctx, "videos", feeds.NewVideoFeed(config.Feeds.VideosURL, *itemLimit))
 	pf.PullItems(ctx)
-	pf.ScheduleRefreshes(ctx)
+
+	if err = pf.ScheduleRefreshes(ctx); err != nil {
+		log.Error(err)
+	}
 
 	database := db.New(dbconn)
 	a, err := app.New(database, pf, config)

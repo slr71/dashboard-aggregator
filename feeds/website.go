@@ -24,7 +24,7 @@ func NewWebsiteFeed(feedURL string, limit int) *WebsiteFeed {
 	}
 }
 
-func (w *WebsiteFeed) ScheduleRefresh(ctx context.Context) *cron.Cron {
+func (w *WebsiteFeed) ScheduleRefresh(ctx context.Context) (*cron.Cron, error) {
 	return ScheduleRefresh(ctx, w)
 }
 

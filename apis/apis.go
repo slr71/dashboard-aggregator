@@ -62,11 +62,15 @@ func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisList
 
 	fullURL.RawQuery = fmt.Sprintf("%s&filter=%s", q.Encode(), string(filterStr))
 
+	log.Debugf("getting running analyses from %s", fullURL.String())
+
 	resp, err := http.Get(fullURL.String())
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	log.Debugf("done getting running analyses from %s", fullURL.String())
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status code from %s was %d", fullURL.String(), resp.StatusCode)
@@ -100,11 +104,15 @@ func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (*AnalysisListi
 	q.Set("sort-dir", "DESC")
 	fullURL.RawQuery = q.Encode()
 
+	log.Debugf("getting recent analyses from %s", fullURL.String())
+
 	resp, err := http.Get(fullURL.String())
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	log.Debugf("done getting recent analyses from %s", fullURL.String())
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -40,7 +40,7 @@ func (v *VideoFeed) FeedURL() string               { return v.feedURL }
 func (v *VideoFeed) PrintItems()                   { PrintItems(v) }
 func (v *VideoFeed) PullItems(ctx context.Context) { PullItems(ctx, v) }
 
-func (v *VideoFeed) ScheduleRefresh(ctx context.Context) *cron.Cron {
+func (v *VideoFeed) ScheduleRefresh(ctx context.Context) (*cron.Cron, error) {
 	return ScheduleRefresh(ctx, v)
 }
 

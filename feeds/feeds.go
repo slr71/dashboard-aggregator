@@ -33,7 +33,7 @@ type DashboardFeeder interface {
 	Limit() int
 	PrintItems()
 
-	ScheduleRefresh(ctx context.Context) *cron.Cron
+	ScheduleRefresh(ctx context.Context) (*cron.Cron, error)
 	PullItems(ctx context.Context)
 	TransformFeedItems(ctx context.Context, feed *gofeed.Feed) []DashboardItem
 }
@@ -77,11 +77,15 @@ func (p PublicFeeds) PrintItems() {
 	}
 }
 
-func (p PublicFeeds) ScheduleRefreshes(ctx context.Context) {
+func (p PublicFeeds) ScheduleRefreshes(ctx context.Context) error {
 	for _, feeder := range p.feeders {
-		c := feeder.ScheduleRefresh(ctx)
-		p.crons = append(p.crons, c)
+		c, err := feeder.ScheduleRefresh(ctx)
+		if err != nil {
+			return err
+		}
+		p.crons = append(p.crons, c) // nolint:all
 	}
+	return nil
 }
 
 func (p PublicFeeds) Items(ctx context.Context, name string) []DashboardItem {
@@ -104,23 +108,26 @@ func (p PublicFeeds) Marshallable(ctx context.Context) map[string][]DashboardIte
  *
  */
 
-func ScheduleRefresh(ctx context.Context, f DashboardFeeder) *cron.Cron {
+func ScheduleRefresh(ctx context.Context, f DashboardFeeder) (*cron.Cron, error) {
 	log := log.WithField("context", "scheduling feed refresh")
 
 	j := cron.New()
 
 	log.Infof("scheduling a refresh of items from %s", f.FeedURL())
 
-	j.AddFunc("0 * * * *", func() {
+	_, err := j.AddFunc("0 * * * *", func() {
 		log.Infof("starting refresh of %s", f.FeedURL())
 		PullItems(ctx, f)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	j.Start()
 
 	log.Debugf("done scheduling a refresh of items from %s", f.FeedURL())
 
-	return j
+	return j, nil
 }
 
 func TransformFeedItems(f DashboardFeeder, feed *gofeed.Feed) []DashboardItem {

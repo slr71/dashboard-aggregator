@@ -46,23 +46,12 @@ spec:
             limits:
               cpu: "3000m"
               memory: "3Gi"
-          env:
-            - name: OTEL_TRACES_EXPORTER
-              valueFrom:
-                secretKeyRef:
-                  name: configs
-                  key: OTEL_TRACES_EXPORTER
-            - name: OTEL_EXPORTER_JAEGER_ENDPOINT
-              valueFrom:
-                secretKeyRef:
-                  name: configs
-                  key: OTEL_EXPORTER_JAEGER_HTTP_ENDPOINT
           volumeMounts:
             - name: localtime
               mountPath: /etc/localtime
               readOnly: true
             - name: service-configs
-              mountPath: /etc/iplant/de
+              mountPath: /etc/iplant/de/configs
               readOnly: true
           ports:
             - name: listen-port

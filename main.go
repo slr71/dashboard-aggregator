@@ -15,6 +15,7 @@ import (
 	"github.com/cyverse-de/dashboard-aggregator/feeds"
 	"github.com/cyverse-de/go-mod/cfg"
 	"github.com/cyverse-de/go-mod/logging"
+	"github.com/cyverse-de/go-mod/otelutils"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/jmoiron/sqlx"
 	"github.com/knadh/koanf"
@@ -48,6 +49,11 @@ func main() {
 	flag.Parse()
 	logging.SetupLogging(*logLevel)
 	log := log.WithField("context", "main")
+
+	var tracerCtx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	shutdown := otelutils.TracerProviderFromEnv(tracerCtx, serviceName, func(e error) { log.Fatal(e) })
+	defer shutdown()
 
 	c, err = cfg.Init(&cfg.Settings{
 		EnvPrefix:   *envPrefix,

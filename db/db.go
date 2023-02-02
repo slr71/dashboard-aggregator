@@ -10,6 +10,9 @@ import (
 	"github.com/cyverse-de/dashboard-aggregator/config"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jmoiron/sqlx"
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 type GoquDatabase interface {
@@ -96,7 +99,8 @@ func Connect(config *config.DatabaseConfiguration) (*sqlx.DB, error) {
 		config.Port,
 		config.Name,
 	)
-	dbconn := sqlx.MustConnect("postgres", dbURI)
+	dbconn := otelsqlx.MustConnect("postgres", dbURI,
+		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
 	dbconn.SetMaxOpenConns(10)
 	dbconn.SetConnMaxIdleTime(time.Minute)
 	return dbconn, nil

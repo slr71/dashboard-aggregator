@@ -50,7 +50,9 @@ func (i *InstantLaunchesAPI) PullItems(ctx context.Context) ([]map[string]interf
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		resp.Body.Close()
+		if resp != nil {
+			resp.Body.Close()
+		}
 		return nil, err
 	}
 	defer resp.Body.Close()

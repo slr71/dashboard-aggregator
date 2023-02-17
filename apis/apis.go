@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,9 +11,11 @@ import (
 	"strings"
 
 	"github.com/cyverse-de/go-mod/logging"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var log = logging.Log.WithField("package", "apis")
+var httpClient = http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
 
 type AnalysisListing struct {
 	Analyses []interface{} `json:"analyses"`
@@ -36,7 +39,7 @@ func fixUsername(username string) string {
 	return username
 }
 
-func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisListing, error) {
+func (a *AnalysisAPI) RunningAnalyses(ctx context.Context, username string, limit int) (*AnalysisListing, error) {
 	log := log.WithField("context", "running analyses")
 
 	u := fixUsername(username)
@@ -64,7 +67,12 @@ func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisList
 
 	log.Debugf("getting running analyses from %s", fullURL.String())
 
-	resp, err := http.Get(fullURL.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +97,7 @@ func (a *AnalysisAPI) RunningAnalyses(username string, limit int) (*AnalysisList
 	return &data, nil
 }
 
-func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (*AnalysisListing, error) {
+func (a *AnalysisAPI) RecentAnalyses(ctx context.Context, username string, limit int) (*AnalysisListing, error) {
 	log := log.WithField("context", "recent analyses")
 
 	u := fixUsername(username)
@@ -106,7 +114,12 @@ func (a *AnalysisAPI) RecentAnalyses(username string, limit int) (*AnalysisListi
 
 	log.Debugf("getting recent analyses from %s", fullURL.String())
 
-	resp, err := http.Get(fullURL.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

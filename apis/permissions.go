@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -27,10 +28,16 @@ type PermissionsResponse struct {
 	Permissions []Permission `json:"permissions"`
 }
 
-func (p *PermissionsAPI) GetPublicIDS(publicGroup string) ([]string, error) {
+func (p *PermissionsAPI) GetPublicIDS(ctx context.Context, publicGroup string) ([]string, error) {
 	fullURL := *p.permissionsURL
 	fullURL = *fullURL.JoinPath("permissions", "abbreviated", "subjects", "group", publicGroup, "app")
-	resp, err := http.Get(fullURL.String())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

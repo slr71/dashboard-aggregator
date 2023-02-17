@@ -2,6 +2,7 @@ package apis
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,7 +24,7 @@ type TargetIDs struct {
 	TargetIDs []string `json:"target-ids"`
 }
 
-func (m *MetadataAPI) GetFilteredTargetIDs(username string, targetTypes []string, avus []map[string]string, targetIDs []string) ([]string, error) {
+func (m *MetadataAPI) GetFilteredTargetIDs(ctx context.Context, username string, targetTypes []string, avus []map[string]string, targetIDs []string) ([]string, error) {
 	u := fixUsername(username)
 
 	fullURL := *m.metadataURL.JoinPath("avus", "filter-targets")
@@ -41,7 +42,13 @@ func (m *MetadataAPI) GetFilteredTargetIDs(username string, targetTypes []string
 		return nil, err
 	}
 
-	resp, err := http.Post(fullURL.String(), "application/json", bytes.NewReader(b))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL.String(), bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("content-type", "application/json")
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

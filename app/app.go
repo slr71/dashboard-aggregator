@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -131,7 +132,7 @@ func (a *App) PublicFeedsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, &result)
 }
 
-func (a *App) featuredAppIDs(username string, publicAppIDs []string) ([]string, error) {
+func (a *App) featuredAppIDs(ctx context.Context, username string, publicAppIDs []string) ([]string, error) {
 	log := log.WithField("context", "featured app ids lookup")
 
 	metadataAPI := apis.NewMetadataAPI(a.metadataURL)
@@ -144,7 +145,7 @@ func (a *App) featuredAppIDs(username string, publicAppIDs []string) ([]string, 
 	}
 
 	log.Debug("getting featured app ids")
-	featuredAppIDs, err := metadataAPI.GetFilteredTargetIDs(username, []string{"app"}, featuredAppsAVUs, publicAppIDs)
+	featuredAppIDs, err := metadataAPI.GetFilteredTargetIDs(ctx, username, []string{"app"}, featuredAppsAVUs, publicAppIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -153,13 +154,13 @@ func (a *App) featuredAppIDs(username string, publicAppIDs []string) ([]string, 
 	return featuredAppIDs, nil
 }
 
-func (a *App) publicAppIDs() ([]string, error) {
+func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
 	log := log.WithField("context", "public app ids lookup")
 
 	permissionsAPI := apis.NewPermissionsAPI(a.permissionsURL)
 
 	log.Debug("getting public app ids")
-	publicAppIDs, err := permissionsAPI.GetPublicIDS(a.config.Permissions.PublicGroup)
+	publicAppIDs, err := permissionsAPI.GetPublicIDS(ctx, a.config.Permissions.PublicGroup)
 	if err != nil {
 		return nil, err
 	}

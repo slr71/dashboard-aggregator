@@ -22,13 +22,13 @@ func (a *App) LoggedOutHandler(c echo.Context) error {
 
 	feeds := a.pf.Marshallable(ctx)
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	featuredAppIDs, err := a.featuredAppIDs(username, publicAppIDs)
+	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
 	if err != nil {
 		log.Error(err)
 		return err

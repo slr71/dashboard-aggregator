@@ -16,7 +16,7 @@ func (a *App) PublicAppsHandler(c echo.Context) error {
 		return err
 	}
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -51,7 +51,7 @@ func (a *App) RecentlyRunAppsHandler(c echo.Context) error {
 
 	startDateInterval := normalizeStartDateInterval(c)
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err

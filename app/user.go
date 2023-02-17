@@ -45,7 +45,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
 
 	log.Debug("getting recent analyses")
-	recentAnalyses, err := analysisAPI.RecentAnalyses(username, int(limit))
+	recentAnalyses, err := analysisAPI.RecentAnalyses(ctx, username, int(limit))
 	if err != nil {
 		log.Error(err)
 		return err
@@ -53,14 +53,14 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	log.Debug("done getting recent analyses")
 
 	log.Debug("getting running analyses")
-	runningAnalyses, err := analysisAPI.RunningAnalyses(username, int(limit))
+	runningAnalyses, err := analysisAPI.RunningAnalyses(ctx, username, int(limit))
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 	log.Debug("done getting running analyses")
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -94,7 +94,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	}
 	log.Debug("done getting recently used apps")
 
-	featuredAppIDs, err := a.featuredAppIDs(username, publicAppIDs)
+	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -157,7 +157,7 @@ func (a *App) PublicAppsForUserHandler(c echo.Context) error {
 		return err
 	}
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -204,7 +204,7 @@ func (a *App) RecentAddedAppsForUserHandler(c echo.Context) error {
 		return err
 	}
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -253,13 +253,13 @@ func (a *App) PopularFeaturedAppsForUserHandler(c echo.Context) error {
 
 	startDateInterval := normalizeStartDateInterval(c)
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	featuredAppIDs, err := a.featuredAppIDs(username, publicAppIDs)
+	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -311,7 +311,7 @@ func (a *App) RecentlyUsedAppsForUser(c echo.Context) error {
 
 	startDateInterval := normalizeStartDateInterval(c)
 
-	publicAppIDs, err := a.publicAppIDs()
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		log.Error(err)
 		return err

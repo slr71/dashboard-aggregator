@@ -43,7 +43,12 @@ func (i *InstantLaunchesAPI) PullItems(ctx context.Context) ([]map[string]interf
 
 	log.Infof("pulling items from %s", u.String())
 
-	resp, err := http.Get(u.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		resp.Body.Close()
 		return nil, err

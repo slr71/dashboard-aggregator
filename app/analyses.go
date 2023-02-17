@@ -8,6 +8,7 @@ import (
 )
 
 func (a *App) RecentAnalysesForUser(c echo.Context) error {
+	ctx := c.Request().Context()
 	log := log.WithField("context", "recent analyses for user")
 
 	username, err := normalizeUsername(c)
@@ -26,7 +27,7 @@ func (a *App) RecentAnalysesForUser(c echo.Context) error {
 
 	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
 
-	recentAnalyses, err := analysisAPI.RecentAnalyses(username, int(limit))
+	recentAnalyses, err := analysisAPI.RecentAnalyses(ctx, username, int(limit))
 	if err != nil {
 		log.Error(err)
 		return err
@@ -41,6 +42,7 @@ func (a *App) RecentAnalysesForUser(c echo.Context) error {
 }
 
 func (a *App) RunningAnalysesForUser(c echo.Context) error {
+	ctx := c.Request().Context()
 	log := log.WithField("context", "recent analyses for user")
 
 	username, err := normalizeUsername(c)
@@ -59,7 +61,7 @@ func (a *App) RunningAnalysesForUser(c echo.Context) error {
 
 	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
 
-	runningAnalyses, err := analysisAPI.RunningAnalyses(username, int(limit))
+	runningAnalyses, err := analysisAPI.RunningAnalyses(ctx, username, int(limit))
 	if err != nil {
 		log.Error(err)
 		return err

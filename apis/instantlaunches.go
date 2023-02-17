@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/cyverse-de/dashboard-aggregator/config"
+	"go.opentelemetry.io/otel"
 )
 
 type InstantLaunchesAPI struct {
@@ -33,6 +34,9 @@ func NewInstantLaunchesAPI(config *config.ServiceConfiguration) (*InstantLaunche
 }
 
 func (i *InstantLaunchesAPI) PullItems(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "PullItems")
+	defer span.End()
+
 	u := i.appExposerURL
 
 	q := u.Query()

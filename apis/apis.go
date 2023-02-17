@@ -12,10 +12,13 @@ import (
 
 	"github.com/cyverse-de/go-mod/logging"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 )
 
 var log = logging.Log.WithField("package", "apis")
 var httpClient = http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+
+const otelName = "github.com/cyverse-de/dashboard-aggregator/apis"
 
 type AnalysisListing struct {
 	Analyses []interface{} `json:"analyses"`
@@ -40,6 +43,9 @@ func fixUsername(username string) string {
 }
 
 func (a *AnalysisAPI) RunningAnalyses(ctx context.Context, username string, limit int) (*AnalysisListing, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "RunningAnalyses")
+	defer span.End()
+
 	log := log.WithField("context", "running analyses")
 
 	u := fixUsername(username)
@@ -107,6 +113,9 @@ func (a *AnalysisAPI) RunningAnalysesAsync(ctx context.Context, username string,
 }
 
 func (a *AnalysisAPI) RecentAnalyses(ctx context.Context, username string, limit int) (*AnalysisListing, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "RecentAnalyses")
+	defer span.End()
+
 	log := log.WithField("context", "recent analyses")
 
 	u := fixUsername(username)

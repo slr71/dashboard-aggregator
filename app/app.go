@@ -14,9 +14,12 @@ import (
 	"github.com/cyverse-de/go-mod/logging"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/otel"
 )
 
 var log = logging.Log.WithField("package", "app")
+
+const otelName = "github.com/cyverse-de/dashboard-aggregator/app"
 
 const DefaultStartDateInterval = "1 year"
 const DefaultLimit = int64(10)
@@ -133,6 +136,9 @@ func (a *App) PublicFeedsHandler(c echo.Context) error {
 }
 
 func (a *App) featuredAppIDs(ctx context.Context, username string, publicAppIDs []string) ([]string, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "featuredAppIDs")
+	defer span.End()
+
 	log := log.WithField("context", "featured app ids lookup")
 
 	metadataAPI := apis.NewMetadataAPI(a.metadataURL)
@@ -164,6 +170,9 @@ func (a *App) featuredAppIDsAsync(ctx context.Context, username string, publicAp
 }
 
 func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "publicAppIDs")
+	defer span.End()
+
 	log := log.WithField("context", "public app ids lookup")
 
 	permissionsAPI := apis.NewPermissionsAPI(a.permissionsURL)

@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"go.opentelemetry.io/otel"
 )
 
 type MetadataAPI struct {
@@ -25,6 +27,9 @@ type TargetIDs struct {
 }
 
 func (m *MetadataAPI) GetFilteredTargetIDs(ctx context.Context, username string, targetTypes []string, avus []map[string]string, targetIDs []string) ([]string, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "GetFilteredTargetIDs")
+	defer span.End()
+
 	u := fixUsername(username)
 
 	fullURL := *m.metadataURL.JoinPath("avus", "filter-targets")

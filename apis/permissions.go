@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/samber/lo"
+	"go.opentelemetry.io/otel"
 )
 
 type PermissionsAPI struct {
@@ -29,6 +30,9 @@ type PermissionsResponse struct {
 }
 
 func (p *PermissionsAPI) GetPublicIDS(ctx context.Context, publicGroup string) ([]string, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "GetPublicIDS")
+	defer span.End()
+
 	fullURL := *p.permissionsURL
 	fullURL = *fullURL.JoinPath("permissions", "abbreviated", "subjects", "group", publicGroup, "app")
 

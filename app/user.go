@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/cyverse-de/dashboard-aggregator/apis"
@@ -30,6 +29,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 		return err
 	}
 
+	// Fetch instant launches
 	ilAPI, err := apis.NewInstantLaunchesAPI(a.config)
 	if err != nil {
 		log.Error(err)
@@ -39,64 +39,25 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	ilChan := make(chan []map[string]interface{})
 	ilErrChan := make(chan error)
 
+	go ilAPI.PullItemsAsync(ctx, ilChan, ilErrChan)
+
+	// Fetch recent & running analyses
+	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
+
 	recentAnalysisChan := make(chan *apis.AnalysisListing)
 	recentAnalysisErrChan := make(chan error)
 
 	runningAnalysisChan := make(chan *apis.AnalysisListing)
 	runningAnalysisErrChan := make(chan error)
 
+	go analysisAPI.RecentAnalysesAsync(ctx, username, int(limit), recentAnalysisChan, recentAnalysisErrChan)
+	go analysisAPI.RunningAnalysesAsync(ctx, username, int(limit), runningAnalysisChan, runningAnalysisErrChan)
+
+	// Fetch public & featured app IDs
 	publicAppIDsChan := make(chan []string)
 	publicAppIDsErrChan := make(chan error)
 
-	go func(ctx context.Context, ilAPI *apis.InstantLaunchesAPI, ilChan chan []map[string]interface{}, errChan chan error) {
-		log.Debug("getting instant launch items")
-		ilItems, err := ilAPI.PullItems(ctx)
-		if err != nil {
-			log.Error(err)
-			errChan <- err
-		}
-		errChan <- nil
-		ilChan <- ilItems
-		log.Debug("done getting instant launch items")
-	}(ctx, ilAPI, ilChan, ilErrChan)
-
-	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
-
-	go func(ctx context.Context, analysisAPI *apis.AnalysisAPI, achan chan *apis.AnalysisListing, errChan chan error) {
-		log.Debug("getting recent analyses")
-		recentAnalyses, err := analysisAPI.RecentAnalyses(ctx, username, int(limit))
-		if err != nil {
-			log.Error(err)
-			errChan <- err
-		}
-		errChan <- nil
-		achan <- recentAnalyses
-		log.Debug("done getting recent analyses")
-	}(ctx, analysisAPI, recentAnalysisChan, recentAnalysisErrChan)
-
-	go func(ctx context.Context, analysisAPI *apis.AnalysisAPI, achan chan *apis.AnalysisListing, errChan chan error) {
-		log.Debug("getting running analyses")
-		runningAnalyses, err := analysisAPI.RunningAnalyses(ctx, username, int(limit))
-		if err != nil {
-			log.Error(err)
-			errChan <- err
-		}
-		errChan <- nil
-		achan <- runningAnalyses
-		log.Debug("done getting running analyses")
-	}(ctx, analysisAPI, runningAnalysisChan, runningAnalysisErrChan)
-
-	go func(ctx context.Context, idchan chan []string, errChan chan error) {
-		log.Debug("getting public app IDs")
-		publicAppIDs, err := a.publicAppIDs(ctx)
-		if err != nil {
-			log.Error(err)
-			errChan <- err
-		}
-		errChan <- nil
-		idchan <- publicAppIDs
-		log.Debug("done getting public app IDs")
-	}(ctx, publicAppIDsChan, publicAppIDsErrChan)
+	go a.publicAppIDsAsync(ctx, publicAppIDsChan, publicAppIDsErrChan)
 
 	// We need public app IDs for the next few calls
 	err = <-publicAppIDsErrChan
@@ -105,6 +66,11 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 		return err
 	}
 	publicAppIDs := <-publicAppIDsChan
+
+	featuredAppIDsChan := make(chan []string)
+	featuredAppIDsErrChan := make(chan error)
+
+	go a.featuredAppIDsAsync(ctx, username, publicAppIDs, featuredAppIDsChan, featuredAppIDsErrChan)
 
 	log.Debug("getting recently added apps")
 	recentlyAddedApps, err := a.db.RecentlyAddedApps(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
@@ -134,11 +100,13 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	}
 	log.Debug("done getting recently used apps")
 
-	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
+	// We need featured app IDs for the next bit
+	err = <-featuredAppIDsErrChan
 	if err != nil {
 		log.Error(err)
 		return err
 	}
+	featuredAppIDs := <-featuredAppIDsChan
 
 	log.Debug("getting featured apps")
 	featuredApps, err := a.db.PopularFeaturedApps(ctx, &db.AppsQueryConfig{

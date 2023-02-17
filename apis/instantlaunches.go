@@ -73,3 +73,12 @@ func (i *InstantLaunchesAPI) PullItems(ctx context.Context) ([]map[string]interf
 
 	return items, nil
 }
+
+func (i *InstantLaunchesAPI) PullItemsAsync(ctx context.Context, itemsChan chan []map[string]interface{}, errChan chan error) {
+	items, err := i.PullItems(ctx)
+	if err != nil {
+		errChan <- err
+	}
+	errChan <- nil
+	itemsChan <- items
+}

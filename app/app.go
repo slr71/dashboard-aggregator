@@ -154,6 +154,15 @@ func (a *App) featuredAppIDs(ctx context.Context, username string, publicAppIDs 
 	return featuredAppIDs, nil
 }
 
+func (a *App) featuredAppIDsAsync(ctx context.Context, username string, publicAppIDs []string, idsChan chan []string, errChan chan error) {
+	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
+	if err != nil {
+		errChan <- err
+	}
+	errChan <- nil
+	idsChan <- featuredAppIDs
+}
+
 func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
 	log := log.WithField("context", "public app ids lookup")
 
@@ -167,4 +176,13 @@ func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
 	log.Debug("done getting public app ids")
 
 	return publicAppIDs, nil
+}
+
+func (a *App) publicAppIDsAsync(ctx context.Context, idsChan chan []string, errChan chan error) {
+	publicAppIDs, err := a.publicAppIDs(ctx)
+	if err != nil {
+		errChan <- err
+	}
+	errChan <- nil
+	idsChan <- publicAppIDs
 }

@@ -97,6 +97,15 @@ func (a *AnalysisAPI) RunningAnalyses(ctx context.Context, username string, limi
 	return &data, nil
 }
 
+func (a *AnalysisAPI) RunningAnalysesAsync(ctx context.Context, username string, limit int, itemsChan chan *AnalysisListing, errChan chan error) {
+	analyses, err := a.RunningAnalyses(ctx, username, limit)
+	if err != nil {
+		errChan <- err
+	}
+	errChan <- nil
+	itemsChan <- analyses
+}
+
 func (a *AnalysisAPI) RecentAnalyses(ctx context.Context, username string, limit int) (*AnalysisListing, error) {
 	log := log.WithField("context", "recent analyses")
 
@@ -144,4 +153,13 @@ func (a *AnalysisAPI) RecentAnalyses(ctx context.Context, username string, limit
 
 	return &data, nil
 
+}
+
+func (a *AnalysisAPI) RecentAnalysesAsync(ctx context.Context, username string, limit int, itemsChan chan *AnalysisListing, errChan chan error) {
+	analyses, err := a.RecentAnalyses(ctx, username, limit)
+	if err != nil {
+		errChan <- err
+	}
+	errChan <- nil
+	itemsChan <- analyses
 }

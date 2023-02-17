@@ -12,6 +12,7 @@ import (
 	"github.com/cyverse-de/go-mod/httperror"
 	"github.com/cyverse-de/go-mod/logging"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 )
 
 var log = logging.Log.WithField("package", "app")
@@ -92,6 +93,8 @@ func New(db *db.Database, pf *feeds.PublicFeeds, cfg *config.ServiceConfiguratio
 }
 
 func (a *App) Echo() *echo.Echo {
+	a.ec.Use(otelecho.Middleware("dashboard-aggregator"))
+
 	a.ec.HTTPErrorHandler = httperror.HTTPErrorHandler
 
 	a.ec.GET("/", a.LoggedOutHandler)

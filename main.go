@@ -23,6 +23,7 @@ import (
 )
 
 var log = logging.Log.WithField("package", "main")
+var serviceName = "dashboard-aggregator"
 
 type DBConfig struct {
 	User     string

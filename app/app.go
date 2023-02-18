@@ -161,10 +161,14 @@ func (a *App) featuredAppIDs(ctx context.Context, username string, publicAppIDs 
 }
 
 func (a *App) featuredAppIDsAsync(ctx context.Context, idsChan chan []string, errChan chan error, username string, publicAppIDs []string) {
+	log.Debug("getting featured app IDs (async)")
 	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
 	if err != nil {
+		log.Debug("error getting featured app IDs (async)")
 		errChan <- err
+		return
 	}
+	log.Debug("got featured app IDs (async)")
 	errChan <- nil
 	idsChan <- featuredAppIDs
 }
@@ -191,6 +195,7 @@ func (a *App) publicAppIDsAsync(ctx context.Context, idsChan chan []string, errC
 	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		errChan <- err
+		return
 	}
 	errChan <- nil
 	idsChan <- publicAppIDs

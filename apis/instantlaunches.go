@@ -82,6 +82,7 @@ func (i *InstantLaunchesAPI) PullItemsAsync(ctx context.Context, itemsChan chan 
 	items, err := i.PullItems(ctx)
 	if err != nil {
 		errChan <- err
+		return
 	}
 	errChan <- nil
 	itemsChan <- items

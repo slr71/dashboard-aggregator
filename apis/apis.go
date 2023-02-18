@@ -107,6 +107,7 @@ func (a *AnalysisAPI) RunningAnalysesAsync(ctx context.Context, itemsChan chan *
 	analyses, err := a.RunningAnalyses(ctx, username, limit)
 	if err != nil {
 		errChan <- err
+		return
 	}
 	errChan <- nil
 	itemsChan <- analyses
@@ -168,6 +169,7 @@ func (a *AnalysisAPI) RecentAnalysesAsync(ctx context.Context, itemsChan chan *A
 	analyses, err := a.RecentAnalyses(ctx, username, limit)
 	if err != nil {
 		errChan <- err
+		return
 	}
 	errChan <- nil
 	itemsChan <- analyses

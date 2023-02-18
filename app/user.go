@@ -50,8 +50,8 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	runningAnalysisChan := make(chan *apis.AnalysisListing)
 	runningAnalysisErrChan := make(chan error)
 
-	go analysisAPI.RecentAnalysesAsync(ctx, username, int(limit), recentAnalysisChan, recentAnalysisErrChan)
-	go analysisAPI.RunningAnalysesAsync(ctx, username, int(limit), runningAnalysisChan, runningAnalysisErrChan)
+	go analysisAPI.RecentAnalysesAsync(ctx, recentAnalysisChan, recentAnalysisErrChan, username, int(limit))
+	go analysisAPI.RunningAnalysesAsync(ctx, runningAnalysisChan, runningAnalysisErrChan, username, int(limit))
 
 	// Fetch public & featured app IDs
 	publicAppIDsChan := make(chan []string)
@@ -70,7 +70,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	featuredAppIDsChan := make(chan []string)
 	featuredAppIDsErrChan := make(chan error)
 
-	go a.featuredAppIDsAsync(ctx, username, publicAppIDs, featuredAppIDsChan, featuredAppIDsErrChan)
+	go a.featuredAppIDsAsync(ctx, featuredAppIDsChan, featuredAppIDsErrChan, username, publicAppIDs)
 
 	log.Debug("getting recently added apps")
 	recentlyAddedApps, err := a.db.RecentlyAddedApps(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))

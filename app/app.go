@@ -160,7 +160,7 @@ func (a *App) featuredAppIDs(ctx context.Context, username string, publicAppIDs 
 	return featuredAppIDs, nil
 }
 
-func (a *App) featuredAppIDsAsync(ctx context.Context, username string, publicAppIDs []string, idsChan chan []string, errChan chan error) {
+func (a *App) featuredAppIDsAsync(ctx context.Context, idsChan chan []string, errChan chan error, username string, publicAppIDs []string) {
 	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
 	if err != nil {
 		errChan <- err

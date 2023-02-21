@@ -8,12 +8,17 @@ import (
 	"time"
 
 	"github.com/cyverse-de/dashboard-aggregator/config"
+	"github.com/cyverse-de/go-mod/logging"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jmoiron/sqlx"
 	"github.com/uptrace/opentelemetry-go-extra/otelsql"
 	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
+
+const otelName = "github.com/cyverse-de/dashboard-aggregator/apis"
+
+var log = logging.Log.WithField("package", "db")
 
 type GoquDatabase interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)

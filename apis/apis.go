@@ -12,10 +12,13 @@ import (
 
 	"github.com/cyverse-de/go-mod/logging"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 )
 
 var log = logging.Log.WithField("package", "apis")
 var httpClient = http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+
+const otelName = "github.com/cyverse-de/dashboard-aggregator/apis"
 
 type AnalysisListing struct {
 	Analyses []interface{} `json:"analyses"`
@@ -40,6 +43,9 @@ func fixUsername(username string) string {
 }
 
 func (a *AnalysisAPI) RunningAnalyses(ctx context.Context, username string, limit int) (*AnalysisListing, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "RunningAnalyses")
+	defer span.End()
+
 	log := log.WithField("context", "running analyses")
 
 	u := fixUsername(username)
@@ -97,7 +103,20 @@ func (a *AnalysisAPI) RunningAnalyses(ctx context.Context, username string, limi
 	return &data, nil
 }
 
+func (a *AnalysisAPI) RunningAnalysesAsync(ctx context.Context, itemsChan chan *AnalysisListing, errChan chan error, username string, limit int) {
+	analyses, err := a.RunningAnalyses(ctx, username, limit)
+	if err != nil {
+		errChan <- err
+		return
+	}
+	errChan <- nil
+	itemsChan <- analyses
+}
+
 func (a *AnalysisAPI) RecentAnalyses(ctx context.Context, username string, limit int) (*AnalysisListing, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "RecentAnalyses")
+	defer span.End()
+
 	log := log.WithField("context", "recent analyses")
 
 	u := fixUsername(username)
@@ -144,4 +163,14 @@ func (a *AnalysisAPI) RecentAnalyses(ctx context.Context, username string, limit
 
 	return &data, nil
 
+}
+
+func (a *AnalysisAPI) RecentAnalysesAsync(ctx context.Context, itemsChan chan *AnalysisListing, errChan chan error, username string, limit int) {
+	analyses, err := a.RecentAnalyses(ctx, username, limit)
+	if err != nil {
+		errChan <- err
+		return
+	}
+	errChan <- nil
+	itemsChan <- analyses
 }

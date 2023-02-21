@@ -29,91 +29,140 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 		return err
 	}
 
-	log.Debug("getting instant launch items")
+	// Fetch instant launches
 	ilAPI, err := apis.NewInstantLaunchesAPI(a.config)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	ilItems, err := ilAPI.PullItems(ctx)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Debug("done getting instant launch items")
 
+	ilChan := make(chan []map[string]interface{})
+	ilErrChan := make(chan error)
+
+	go ilAPI.PullItemsAsync(ctx, ilChan, ilErrChan)
+
+	// Fetch recent & running analyses
 	analysisAPI := apis.NewAnalysisAPI(a.appsURL)
 
-	log.Debug("getting recent analyses")
-	recentAnalyses, err := analysisAPI.RecentAnalyses(ctx, username, int(limit))
+	recentAnalysisChan := make(chan *apis.AnalysisListing)
+	recentAnalysisErrChan := make(chan error)
+
+	runningAnalysisChan := make(chan *apis.AnalysisListing)
+	runningAnalysisErrChan := make(chan error)
+
+	go analysisAPI.RecentAnalysesAsync(ctx, recentAnalysisChan, recentAnalysisErrChan, username, int(limit))
+	go analysisAPI.RunningAnalysesAsync(ctx, runningAnalysisChan, runningAnalysisErrChan, username, int(limit))
+
+	// Fetch public & featured app IDs
+	publicAppIDsChan := make(chan []string)
+	publicAppIDsErrChan := make(chan error)
+
+	go a.publicAppIDsAsync(ctx, publicAppIDsChan, publicAppIDsErrChan)
+
+	// We need public app IDs for the next few calls
+	err = <-publicAppIDsErrChan
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	log.Debug("done getting recent analyses")
+	publicAppIDs := <-publicAppIDsChan
 
-	log.Debug("getting running analyses")
-	runningAnalyses, err := analysisAPI.RunningAnalyses(ctx, username, int(limit))
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Debug("done getting running analyses")
+	featuredAppIDsChan := make(chan []string)
+	featuredAppIDsErrChan := make(chan error)
 
-	publicAppIDs, err := a.publicAppIDs(ctx)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
+	go a.featuredAppIDsAsync(ctx, featuredAppIDsChan, featuredAppIDsErrChan, username, publicAppIDs)
 
-	log.Debug("getting recently added apps")
-	recentlyAddedApps, err := a.db.RecentlyAddedApps(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
-	if err != nil {
-		return err
-	}
-	log.Debug("done getting recently added apps")
+	recentlyAddedAppsChan := make(chan []db.App)
+	recentlyAddedAppsErrChan := make(chan error)
 
-	log.Debug("getting public apps")
-	publicApps, err := a.db.PublicAppsQuery(ctx, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Debug("done getting public apps")
+	go a.db.RecentlyAddedAppsAsync(ctx, recentlyAddedAppsChan, recentlyAddedAppsErrChan, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
 
-	log.Debug("getting recently used apps")
-	recentlyUsed, err := a.db.RecentlyUsedApps(ctx, &db.AppsQueryConfig{
+	publicAppsChan := make(chan []db.App)
+	publicAppsErrChan := make(chan error)
+
+	go a.db.PublicAppsQueryAsync(ctx, publicAppsChan, publicAppsErrChan, username, a.config.Apps.FavoritesGroupIndex, publicAppIDs, db.WithQueryLimit(uint(limit)))
+
+	recentlyUsedAppsChan := make(chan []db.App)
+	recentlyUsedAppsErrChan := make(chan error)
+
+	go a.db.RecentlyUsedAppsAsync(ctx, recentlyUsedAppsChan, recentlyUsedAppsErrChan, &db.AppsQueryConfig{
 		Username:          username,
 		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
 		AppIDs:            publicAppIDs,
 		StartDateInterval: startDateInterval,
 	}, db.WithQueryLimit(uint(limit)))
+
+	// We need featured app IDs for the next bit
+	err = <-featuredAppIDsErrChan
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	log.Debug("done getting recently used apps")
+	featuredAppIDs := <-featuredAppIDsChan
 
-	featuredAppIDs, err := a.featuredAppIDs(ctx, username, publicAppIDs)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
+	featuredAppsChan := make(chan []db.App)
+	featuredAppsErrChan := make(chan error)
 
-	log.Debug("getting featured apps")
-	featuredApps, err := a.db.PopularFeaturedApps(ctx, &db.AppsQueryConfig{
+	go a.db.PopularFeaturedAppsAsync(ctx, featuredAppsChan, featuredAppsErrChan, &db.AppsQueryConfig{
 		Username:          username,
 		GroupsIndex:       a.config.Apps.FavoritesGroupIndex,
 		AppIDs:            featuredAppIDs,
 		StartDateInterval: startDateInterval,
 	}, db.WithQueryLimit(uint(limit)))
+
+	publicFeeds := a.pf
+
+	log.Debug("dereferencing channels")
+
+	// Now, check all the channels we still haven't
+	err = <-ilErrChan
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	log.Debug("done getting featured apps")
+	ilItems := <-ilChan
 
-	publicFeeds := a.pf
+	err = <-recentAnalysisErrChan
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	recentAnalyses := <-recentAnalysisChan
+
+	err = <-runningAnalysisErrChan
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	runningAnalyses := <-runningAnalysisChan
+
+	err = <-recentlyAddedAppsErrChan
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	recentlyAddedApps := <-recentlyAddedAppsChan
+
+	err = <-publicAppsErrChan
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	publicApps := <-publicAppsChan
+
+	err = <-recentlyUsedAppsErrChan
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	recentlyUsedApps := <-recentlyUsedAppsChan
+
+	err = <-featuredAppsErrChan
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	featuredApps := <-featuredAppsChan
 
 	retval := map[string]interface{}{
 		"analyses": map[string]interface{}{
@@ -123,7 +172,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 		"apps": map[string]interface{}{
 			"recentlyAdded":   recentlyAddedApps,
 			"public":          publicApps,
-			"recentlyUsed":    recentlyUsed,
+			"recentlyUsed":    recentlyUsedApps,
 			"popularFeatured": featuredApps,
 		},
 		"instantLaunches": ilItems,

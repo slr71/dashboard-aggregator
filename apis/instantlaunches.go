@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/cyverse-de/dashboard-aggregator/config"
+	"go.opentelemetry.io/otel"
 )
 
 type InstantLaunchesAPI struct {
@@ -33,6 +34,9 @@ func NewInstantLaunchesAPI(config *config.ServiceConfiguration) (*InstantLaunche
 }
 
 func (i *InstantLaunchesAPI) PullItems(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, span := otel.Tracer(otelName).Start(ctx, "PullItems")
+	defer span.End()
+
 	u := i.appExposerURL
 
 	q := u.Query()
@@ -50,7 +54,9 @@ func (i *InstantLaunchesAPI) PullItems(ctx context.Context) ([]map[string]interf
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		resp.Body.Close()
+		if resp != nil {
+			resp.Body.Close()
+		}
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -70,4 +76,14 @@ func (i *InstantLaunchesAPI) PullItems(ctx context.Context) ([]map[string]interf
 	}
 
 	return items, nil
+}
+
+func (i *InstantLaunchesAPI) PullItemsAsync(ctx context.Context, itemsChan chan []map[string]interface{}, errChan chan error) {
+	items, err := i.PullItems(ctx)
+	if err != nil {
+		errChan <- err
+		return
+	}
+	errChan <- nil
+	itemsChan <- items
 }

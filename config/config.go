@@ -199,9 +199,9 @@ func NewPermissionsConfiguration(config *koanf.Koanf) (*PermissionsConfiguration
 	}
 	log.Debug(g)
 
-	i := config.String("permissions.iplant_groups.uri")
+	i := config.String("iplant_groups.uri")
 	if i == "" {
-		return nil, errors.New("permissions.iplant_groups.uri must be set in the configuration")
+		return nil, errors.New("iplant_groups.uri must be set in the configuration")
 	}
 	log.Debug(i)
 

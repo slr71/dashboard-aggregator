@@ -94,7 +94,6 @@ func main() {
 	}
 
 	database := db.New(dbconn)
-
 	a, err := app.New(database, pf, config)
 	if err != nil {
 		log.Fatal(err)
@@ -102,7 +101,6 @@ func main() {
 
 	// Set the group ID
 	a.SetPublicID(ctx)
-
 	ae := a.Echo()
 
 	srv := fmt.Sprintf(":%s", strconv.Itoa(config.ListenPort))

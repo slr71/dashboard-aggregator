@@ -56,9 +56,15 @@ func normalizeUsername(c echo.Context) (string, error) {
 	return username, nil
 }
 
-func (a *App) SetPublicID(ctx context.Context) {
-	publicGroupID, _ := apis.GetGroupID(ctx, a.config)
+func (a *App) SetPublicID(ctx context.Context) error {
+	publicGroupID, err := apis.GetGroupID(ctx, a.config)
+	if err != nil {
+		return err
+	}
+	// Set the publicGroupID in the App struct
 	a.publicGroupID = publicGroupID
+
+	return nil
 }
 
 type App struct {

@@ -39,9 +39,7 @@ func main() {
 		c      *koanf.Koanf
 		dbconn *sqlx.DB
 
-		cfgPath = flag.String("config", "/Users/sboleyn/Documents/apps/k8s-resources/resources/configs/qa/dashboard-aggregator.yaml", "Path to the config file")
-		//cfgPath    string
-		// cfgPath    = flag.String("config", cfg.DefaultConfigPath, "Path to the config file")
+		cfgPath    = flag.String("config", cfg.DefaultConfigPath, "Path to the config file")
 		dotEnvPath = flag.String("dotenv", cfg.DefaultDotEnvPath, "Path to the dotenv file")
 		envPrefix  = flag.String("env-prefix", cfg.DefaultEnvPrefix, "The prefix for environment variables")
 		itemLimit  = flag.Int("item-limit", 10, "The default limit on the number of items returned for a dashboard section")

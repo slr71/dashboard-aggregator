@@ -45,7 +45,7 @@ func GetGroupID(ctx context.Context, config *config.ServiceConfiguration) (*stri
 	fullURL = fullURL.JoinPath("groups", groupName)
 
 	q := fullURL.Query()
-	q.Set("user", "de-grouper")
+	q.Set("user", "de_grouper")
 
 	fullURL.RawQuery = q.Encode()
 

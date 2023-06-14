@@ -56,6 +56,13 @@ func normalizeUsername(c echo.Context) (string, error) {
 	return username, nil
 }
 
+func (a *App) SetPublicID(ctx context.Context) {
+	publicGroupID, _ := apis.GetGroupID(ctx, a.config)
+
+	// Set the publicGroupID in the App struct
+	a.publicGroupID = publicGroupID
+}
+
 type App struct {
 	db             *db.Database
 	ec             *echo.Echo
@@ -65,6 +72,7 @@ type App struct {
 	metadataURL    *url.URL
 	permissionsURL *url.URL
 	config         *config.ServiceConfiguration
+	publicGroupID  *string
 }
 
 func New(db *db.Database, pf *feeds.PublicFeeds, cfg *config.ServiceConfiguration) (*App, error) {
@@ -84,6 +92,7 @@ func New(db *db.Database, pf *feeds.PublicFeeds, cfg *config.ServiceConfiguratio
 	if err != nil {
 		return nil, err
 	}
+
 	return &App{
 		db:             db,
 		ec:             echo.New(),
@@ -173,7 +182,7 @@ func (a *App) featuredAppIDsAsync(ctx context.Context, idsChan chan []string, er
 	idsChan <- featuredAppIDs
 }
 
-func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
+func (a *App) publicAppIDs(ctx context.Context, publicGroupID *string) ([]string, error) {
 	ctx, span := otel.Tracer(otelName).Start(ctx, "publicAppIDs")
 	defer span.End()
 
@@ -182,7 +191,7 @@ func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
 	permissionsAPI := apis.NewPermissionsAPI(a.permissionsURL)
 
 	log.Debug("getting public app ids")
-	publicAppIDs, err := permissionsAPI.GetPublicIDS(ctx, a.config.Permissions.PublicGroup)
+	publicAppIDs, err := permissionsAPI.GetPublicIDS(ctx, publicGroupID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,8 +200,8 @@ func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
 	return publicAppIDs, nil
 }
 
-func (a *App) publicAppIDsAsync(ctx context.Context, idsChan chan []string, errChan chan error) {
-	publicAppIDs, err := a.publicAppIDs(ctx)
+func (a *App) publicAppIDsAsync(ctx context.Context, publicGroupID *string, idsChan chan []string, errChan chan error) {
+	publicAppIDs, err := a.publicAppIDs(ctx, publicGroupID)
 	if err != nil {
 		errChan <- err
 		return

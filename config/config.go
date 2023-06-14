@@ -182,8 +182,9 @@ func NewAppsConfiguration(config *koanf.Koanf) (*AppsConfiguration, error) {
 }
 
 type PermissionsConfiguration struct {
-	URL         string
-	PublicGroup string
+	GroupURL        string
+	URL             string
+	PublicGroupName string
 }
 
 func NewPermissionsConfiguration(config *koanf.Koanf) (*PermissionsConfiguration, error) {
@@ -191,14 +192,23 @@ func NewPermissionsConfiguration(config *koanf.Koanf) (*PermissionsConfiguration
 	if u == "" {
 		return nil, errors.New("permissions.uri must be set in the configuration")
 	}
-	g := config.String("permissions.public_group")
+
+	g := config.String("permissions.public_group_name")
 	if g == "" {
-		return nil, errors.New("permissions.public_group must be set in the configuration")
+		return nil, errors.New("permissions.public_group_name must be set in the configuration")
 	}
 	log.Debug(g)
+
+	i := config.String("permissions.iplant_groups.uri")
+	if i == "" {
+		return nil, errors.New("permissions.iplant_groups.uri must be set in the configuration")
+	}
+	log.Debug(i)
+
 	return &PermissionsConfiguration{
-		URL:         u,
-		PublicGroup: g,
+		GroupURL:        i,
+		URL:             u,
+		PublicGroupName: g,
 	}, nil
 }
 

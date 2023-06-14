@@ -57,7 +57,7 @@ func (a *App) UserDashboardHandler(c echo.Context) error {
 	publicAppIDsChan := make(chan []string)
 	publicAppIDsErrChan := make(chan error)
 
-	go a.publicAppIDsAsync(ctx, publicAppIDsChan, publicAppIDsErrChan)
+	go a.publicAppIDsAsync(ctx, a.publicGroupID, publicAppIDsChan, publicAppIDsErrChan)
 
 	// We need public app IDs for the next few calls
 	err = <-publicAppIDsErrChan
@@ -206,7 +206,7 @@ func (a *App) PublicAppsForUserHandler(c echo.Context) error {
 		return err
 	}
 
-	publicAppIDs, err := a.publicAppIDs(ctx)
+	publicAppIDs, err := a.publicAppIDs(ctx, a.publicGroupID)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -253,7 +253,7 @@ func (a *App) RecentAddedAppsForUserHandler(c echo.Context) error {
 		return err
 	}
 
-	publicAppIDs, err := a.publicAppIDs(ctx)
+	publicAppIDs, err := a.publicAppIDs(ctx, a.publicGroupID)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -302,7 +302,7 @@ func (a *App) PopularFeaturedAppsForUserHandler(c echo.Context) error {
 
 	startDateInterval := normalizeStartDateInterval(c)
 
-	publicAppIDs, err := a.publicAppIDs(ctx)
+	publicAppIDs, err := a.publicAppIDs(ctx, a.publicGroupID)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -360,7 +360,7 @@ func (a *App) RecentlyUsedAppsForUser(c echo.Context) error {
 
 	startDateInterval := normalizeStartDateInterval(c)
 
-	publicAppIDs, err := a.publicAppIDs(ctx)
+	publicAppIDs, err := a.publicAppIDs(ctx, a.publicGroupID)
 	if err != nil {
 		log.Error(err)
 		return err

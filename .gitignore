@@ -8,3 +8,6 @@ config/production*
 config/*-production*
 config/local*
 config/*-local*
+
+# Debug files
+launch.json

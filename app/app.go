@@ -61,7 +61,7 @@ func (a *App) SetPublicID(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// Set the publicGroupID in the App struct
+
 	a.publicGroupID = publicGroupID
 
 	return nil
@@ -96,7 +96,6 @@ func New(db *db.Database, pf *feeds.PublicFeeds, cfg *config.ServiceConfiguratio
 	if err != nil {
 		return nil, err
 	}
-
 	return &App{
 		db:             db,
 		ec:             echo.New(),
@@ -186,7 +185,7 @@ func (a *App) featuredAppIDsAsync(ctx context.Context, idsChan chan []string, er
 	idsChan <- featuredAppIDs
 }
 
-func (a *App) publicAppIDs(ctx context.Context, publicGroupID *string) ([]string, error) {
+func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
 	ctx, span := otel.Tracer(otelName).Start(ctx, "publicAppIDs")
 	defer span.End()
 
@@ -195,7 +194,7 @@ func (a *App) publicAppIDs(ctx context.Context, publicGroupID *string) ([]string
 	permissionsAPI := apis.NewPermissionsAPI(a.permissionsURL)
 
 	log.Debug("getting public app ids")
-	publicAppIDs, err := permissionsAPI.GetPublicIDS(ctx, publicGroupID)
+	publicAppIDs, err := permissionsAPI.GetPublicIDS(ctx, a.publicGroupID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,8 +203,8 @@ func (a *App) publicAppIDs(ctx context.Context, publicGroupID *string) ([]string
 	return publicAppIDs, nil
 }
 
-func (a *App) publicAppIDsAsync(ctx context.Context, publicGroupID *string, idsChan chan []string, errChan chan error) {
-	publicAppIDs, err := a.publicAppIDs(ctx, publicGroupID)
+func (a *App) publicAppIDsAsync(ctx context.Context, idsChan chan []string, errChan chan error) {
+	publicAppIDs, err := a.publicAppIDs(ctx)
 	if err != nil {
 		errChan <- err
 		return

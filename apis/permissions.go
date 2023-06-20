@@ -43,6 +43,10 @@ func GetGroupID(ctx context.Context, config *config.ServiceConfiguration) (*stri
 
 	fullURL, err := url.Parse(config.Permissions.GroupURL)
 
+	if err != nil {
+		return nil, err
+	}
+
 	fullURL = fullURL.JoinPath("groups", groupName)
 
 	q := fullURL.Query()

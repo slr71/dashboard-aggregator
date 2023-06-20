@@ -56,17 +56,6 @@ func normalizeUsername(c echo.Context) (string, error) {
 	return username, nil
 }
 
-func (a *App) SetPublicID(ctx context.Context) error {
-	publicGroupID, err := apis.GetGroupID(ctx, a.config)
-	if err != nil {
-		return err
-	}
-
-	a.publicGroupID = publicGroupID
-
-	return nil
-}
-
 type App struct {
 	db             *db.Database
 	ec             *echo.Echo
@@ -77,6 +66,17 @@ type App struct {
 	permissionsURL *url.URL
 	config         *config.ServiceConfiguration
 	publicGroupID  *string
+}
+
+func (a *App) SetPublicID(ctx context.Context) error {
+	publicGroupID, err := apis.GetGroupID(ctx, a.config)
+	if err != nil {
+		return err
+	}
+
+	a.publicGroupID = publicGroupID
+
+	return nil
 }
 
 func New(db *db.Database, pf *feeds.PublicFeeds, cfg *config.ServiceConfiguration) (*App, error) {

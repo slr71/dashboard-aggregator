@@ -39,7 +39,8 @@ func GetGroupID(ctx context.Context, config *config.ServiceConfiguration) (*stri
 	ctx, span := otel.Tracer(otelName).Start(ctx, "GetGroupID")
 	defer span.End()
 
-	groupName := config.Permissions.PublicGroupName
+	groupName := config.Permissions.PublicGroup
+
 	fullURL, err := url.Parse(config.Permissions.GroupURL)
 
 	fullURL = fullURL.JoinPath("groups", groupName)

@@ -99,6 +99,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Set the group ID
+	err = a.SetPublicID(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ae := a.Echo()
 
 	srv := fmt.Sprintf(":%s", strconv.Itoa(config.ListenPort))

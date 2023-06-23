@@ -65,6 +65,18 @@ type App struct {
 	metadataURL    *url.URL
 	permissionsURL *url.URL
 	config         *config.ServiceConfiguration
+	publicGroupID  *string
+}
+
+func (a *App) SetPublicID(ctx context.Context) error {
+	publicGroupID, err := apis.GetGroupID(ctx, a.config)
+	if err != nil {
+		return err
+	}
+
+	a.publicGroupID = publicGroupID
+
+	return nil
 }
 
 func New(db *db.Database, pf *feeds.PublicFeeds, cfg *config.ServiceConfiguration) (*App, error) {
@@ -182,7 +194,7 @@ func (a *App) publicAppIDs(ctx context.Context) ([]string, error) {
 	permissionsAPI := apis.NewPermissionsAPI(a.permissionsURL)
 
 	log.Debug("getting public app ids")
-	publicAppIDs, err := permissionsAPI.GetPublicIDS(ctx, a.config.Permissions.PublicGroup)
+	publicAppIDs, err := permissionsAPI.GetPublicIDS(ctx, a.publicGroupID)
 	if err != nil {
 		return nil, err
 	}

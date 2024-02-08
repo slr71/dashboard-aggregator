@@ -77,21 +77,28 @@ func main() {
 		config.ListenPort = *listenPort
 	}
 
+	log.Infof("Connecting to the database at %s:%d/%s", config.DB.Host, config.DB.Port, config.DB.Name)
 	dbconn, err = db.Connect(config.DB)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Info("Done connecting to the database")
 
 	ctx := context.Background()
 	pf := feeds.NewPublicFeeds()
 	pf.AddFeed(ctx, "news", feeds.NewWebsiteFeed(config.Feeds.NewsFeedURL, *itemLimit))
 	pf.AddFeed(ctx, "events", feeds.NewWebsiteFeed(config.Feeds.EventsFeedURL, *itemLimit))
 	pf.AddFeed(ctx, "videos", feeds.NewVideoFeed(config.Feeds.VideosURL, *itemLimit))
-	pf.PullItems(ctx)
 
+	log.Info("Pulling items from feeds")
+	pf.PullItems(ctx)
+	log.Info("Done pulling items from feeds")
+
+	log.Infof("Scheduling feed refreshes")
 	if err = pf.ScheduleRefreshes(ctx); err != nil {
 		log.Error(err)
 	}
+	log.Info("Done scheduling feed refreshes")
 
 	database := db.New(dbconn)
 	a, err := app.New(database, pf, config)
@@ -99,14 +106,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Info("Setting the public group ID")
 	// Set the group ID
 	err = a.SetPublicID(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Info("Done setting the public group ID")
 
 	ae := a.Echo()
 
+	log.Info("Starting the server")
 	srv := fmt.Sprintf(":%s", strconv.Itoa(config.ListenPort))
 	log.Fatal(http.ListenAndServe(srv, ae))
 }

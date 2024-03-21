@@ -113,13 +113,7 @@ func Connect(config *config.DatabaseConfiguration) (*sqlx.DB, error) {
 
 func (d *Database) Healthz(ctx context.Context) error {
 	db := d.goquDB
-	v := goqu.T("version")
-	query := db.From(v).
-		Select(v.Col("version")).
-		Order(v.Col("applied").
-			Desc()).
-		Limit(1).
-		Executor()
+	query := db.Select(goqu.L("1")).Executor()
 
 	var result string
 	found, err := query.ScanValContext(ctx, &result)
